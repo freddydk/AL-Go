@@ -15,6 +15,9 @@ function Get-dependencies {
     $downloadedList = @()
     $probingPathsJson | ForEach-Object {
         $dependency = $_
+
+        Write-host $dependency.Repo
+
         if (-not ($dependency.PsObject.Properties.name -eq "repo")) {
             throw "AppDependencyProbingPaths needs to contain a repo property, pointing to the repository on which you have a dependency"
         }
@@ -45,11 +48,12 @@ function Get-dependencies {
             }    
                 
             $artifact = $artifacts | Select-Object -First 1
-            if (!($artifact)) {
-                throw "Could not find any artifacts that matches the criteria."
+            if ($artifact) {
+                $download = DownloadArtifact -path $saveToPath -token $dependency.authTokenSecret -artifact $artifact
             }
-
-            $download = DownloadArtifact -path $saveToPath -token $dependency.authTokenSecret -artifact $artifact
+            else {
+                Write-Host -ForegroundColor Red "Could not find any artifacts that matches '*$mask*'"
+            }
         }
         else {
 
