@@ -827,6 +827,11 @@ function CommitFromNewFolder {
         $commitMessage = "$($commitMessage.Substring(0,250))...)"
     }
     invoke-git commit --allow-empty -m "'$commitMessage'"
+
+    Write-Host $serverUrl
+    Write-Host $branch
+        
+
     if ($branch) {
         invoke-git push -u $serverUrl $branch
         invoke-gh pr create --fill --head $branch --repo $env:GITHUB_REPOSITORY
