@@ -111,7 +111,7 @@ try {
                 else {
                     $url = "$($ENV:GITHUB_API_URL)/repos/$($ENV:GITHUB_REPOSITORY)/compare/$($ghEvent.before)...$($ghEvent.after)"
                 }
-                $response = Invoke-WebRequest -Headers $headers -UseBasicParsing -Method GET -Uri $url | ConvertFrom-Json
+                $response = Invoke-WebRequest -UseBasicParsing -Method GET -Headers $headers -Uri $url | ConvertFrom-Json
                 $filesChanged = @($response.files | ForEach-Object { $_.filename })
                 if ($filesChanged.Count -lt 250) {
                     Write-Host "Modified files:"

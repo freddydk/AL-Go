@@ -460,6 +460,8 @@ function AnalyzeRepo {
         Write-Host "::group::Analyzing repository"
     }
 
+    Set-Location $baseFolder
+
     # Check applicationDependency
     [Version]$settings.applicationDependency | Out-null
 
@@ -554,67 +556,70 @@ function AnalyzeRepo {
         }
         $folders | ForEach-Object {
             $folderName = $_
-            if ($dependencies.Contains($folderName)) {
-                throw "$descr $folderName, specified in $ALGoSettingsFile, is specified more than once."
-            }
             $folder = Join-Path $baseFolder $folderName
             $appJsonFile = Join-Path $folder "app.json"
             $bcptSuiteFile = Join-Path $folder "bcptSuite.json"
-            $removeFolder = $false
+            $enumerate = $true
             if (-not (Test-Path $folder -PathType Container)) {
                 if (!$doNotIssueWarnings) { OutputWarning -message "$descr $folderName, specified in $ALGoSettingsFile, does not exist" }
-                $removeFolder = $true
             }
             elseif (-not (Test-Path $appJsonFile -PathType Leaf)) {
                 if (!$doNotIssueWarnings) { OutputWarning -message "$descr $folderName, specified in $ALGoSettingsFile, does not contain the source code for an app (no app.json file)" }
-                $removeFolder = $true
             }
             elseif ($bcptTestFolder -and (-not (Test-Path $bcptSuiteFile -PathType Leaf))) {
                 if (!$doNotIssueWarnings) { OutputWarning -message "$descr $folderName, specified in $ALGoSettingsFile, does not contain a BCPT Suite (bcptSuite.json)" }
-                $removeFolder = $true
+                $settings.bcptTestFolders = @($settings.bcptTestFolders | Where-Object { $_ -ne $folderName })
+                $enumerate = $false
             }
-            if ($removeFolder) {
+            if ($enumerate) {
+                $expandFolders = @(Get-Item $appJsonFile -ErrorAction SilentlyContinue | ForEach-Object { Resolve-Path -Relative $_.Directory })
                 if ($appFolder) {
-                    $settings.appFolders = @($settings.appFolders | Where-Object { $_ -ne $folderName })
+                    $settings.appFolders = @($settings.appFolders | Where-Object { $_ -ne $folderName }) + $expandFolders
                 }
                 elseif ($testFolder) {
-                    $settings.testFolders = @($settings.testFolders | Where-Object { $_ -ne $folderName })
+                    $settings.testFolders = @($settings.testFolders | Where-Object { $_ -ne $folderName }) + $expandFolders
                 }
                 elseif ($bcptTestFolder) {
-                    $settings.bcptTestFolders = @($settings.bcptTestFolders | Where-Object { $_ -ne $folderName })
+                    $settings.bcptTestFolders = @($settings.bcptTestFolders | Where-Object { $_ -ne $folderName }) + $expandFolders
                 }
-            }
-            else {
-                $dependencies.Add("$folderName", @())
-                try {
-                    $appJson = Get-Content $appJsonFile -Encoding UTF8 | ConvertFrom-Json
-                    if ($appJson.PSObject.Properties.Name -eq 'Dependencies') {
-                        $appJson.dependencies | ForEach-Object {
-                            if ($_.PSObject.Properties.Name -eq "AppId") {
-                                $id = $_.AppId
-                            }
-                            else {
-                                $id = $_.Id
-                            }
-                            if ($id -eq $applicationAppId) {
-                                if ([Version]$_.Version -gt [Version]$settings.applicationDependency) {
-                                    $settings.applicationDependency = $appDep
+                $expandFolders | ForEach-Object {
+                    $folderName = $_
+                    $folder = Join-Path $baseFolder $folderName
+                    $appJsonFile = Join-Path $folder "app.json"
+                    if ($dependencies.Contains($folderName)) {
+                        throw "$descr $folderName, specified in $ALGoSettingsFile, is specified more than once."
+                    }
+                    $dependencies.Add("$folderName", @())
+                    try {
+                        $appJson = Get-Content $appJsonFile -Encoding UTF8 | ConvertFrom-Json
+                        if ($appJson.PSObject.Properties.Name -eq 'Dependencies') {
+                            $appJson.dependencies | ForEach-Object {
+                                if ($_.PSObject.Properties.Name -eq "AppId") {
+                                    $id = $_.AppId
+                                }
+                                else {
+                                    $id = $_.Id
+                                }
+                                if ($id -eq $applicationAppId) {
+                                    if ([Version]$_.Version -gt [Version]$settings.applicationDependency) {
+                                        $settings.applicationDependency = $appDep
+                                    }
+                                }
+                                else {
+                                    $dependencies."$folderName" += @( [ordered]@{ "id" = $id; "version" = $_.version } )
                                 }
                             }
-                            else {
-                                $dependencies."$folderName" += @( [ordered]@{ "id" = $id; "version" = $_.version } )
+                        }
+                        if ($appJson.PSObject.Properties.Name -eq 'Application') {
+                            $appDep = $appJson.application
+                            if ([Version]$appDep -gt [Version]$settings.applicationDependency) {
+                                $settings.applicationDependency = $appDep
                             }
                         }
                     }
-                    if ($appJson.PSObject.Properties.Name -eq 'Application') {
-                        $appDep = $appJson.application
-                        if ([Version]$appDep -gt [Version]$settings.applicationDependency) {
-                            $settings.applicationDependency = $appDep
-                        }
+                    catch {
+                        throw "$descr $folderName, specified in $ALGoSettingsFile, contains a corrupt app.json file. Error is $($_.Exception.Message)."
                     }
-                }
-                catch {
-                    throw "$descr $folderName, specified in $ALGoSettingsFile, contains a corrupt app.json file. Error is $($_.Exception.Message)."
                 }
             }
         }
