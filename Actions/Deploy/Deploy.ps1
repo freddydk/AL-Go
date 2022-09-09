@@ -85,6 +85,7 @@ try {
                 if (!(Test-Path $appFile)) {
                     throw "Unable to download artifact $($_.name)"
                 }
+                $apps += @($appFile)
             }
         }
         else {

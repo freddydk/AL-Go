@@ -163,7 +163,7 @@ try {
                 "Accept"        = "application/vnd.github.v3+json"
             }
             $url = "$($ENV:GITHUB_API_URL)/repos/$($ENV:GITHUB_REPOSITORY)/environments"
-            $environments = @((InvokeWebRequest -Headers $headers -Uri $url | ConvertFrom-Json).environments | ForEach-Object { $_.Name })
+            $environments = @((InvokeWebRequest -Headers $headers -Uri $url -ErrorAction SilentlyContinue | ConvertFrom-Json).environments | ForEach-Object { $_.Name })
         }
         catch {
         }
