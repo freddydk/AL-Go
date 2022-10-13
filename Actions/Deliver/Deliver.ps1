@@ -4,7 +4,7 @@ Param(
     [Parameter(HelpMessage = "The GitHub token running the action", Mandatory = $false)]
     [string] $token,
     [Parameter(HelpMessage = "Specifies the parent telemetry scope for the telemetry signal", Mandatory = $false)]
-    [string] $parentTelemetryScopeJson = '{}',
+    [string] $parentTelemetryScopeJson = '7b7d',
     [Parameter(HelpMessage = "Projects to deliver (default is all)", Mandatory = $false)]
     [string] $projects = "*",
     [Parameter(HelpMessage = "Delivery target (AppSource or Storage)", Mandatory = $true)]
@@ -64,7 +64,6 @@ try {
     if ("$env:deliveryContext" -eq "") {
         throw "$($deliveryTarget)Context is not defined, cannot deliver to $deliveryTarget"
     }
-
     $key = "$($deliveryTarget)Context"
     Write-Host "Using $key"
     Set-Variable -Name $key -Value $env:deliveryContext
@@ -185,6 +184,104 @@ try {
             }
             . $customScript -parameters $parameters
         }
+        elseif ($deliveryTarget -eq "GitHubPackages") {
+            $githubPackagesCredential = $githubPackagesContext | ConvertFrom-Json
+            'Apps' | ForEach-Object {
+                $folder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$($_)-*") -Directory)
+                if ($folder.Count -gt 1) {
+                    $folder | Out-Host
+                    throw "Internal error - multiple $_ folders located"
+                }
+                elseif ($folder.Count -eq 1) {
+                    Get-Item -Path (Join-Path $folder[0] "*.app") | ForEach-Object {
+                        $parameters = @{
+                            "gitHubRepository" = "$ENV:GITHUB_SERVER_URL/$ENV:GITHUB_REPOSITORY"
+                            "includeNuGetDependencies" = $true
+                            "dependencyIdTemplate" = "AL-Go-{id}"
+                            "packageId" = "AL-Go-{id}"
+                        }
+                        $parameters.appFiles = $_.FullName
+                        $package = New-BcNuGetPackage @parameters
+                        Push-BcNuGetPackage -nuGetServerUrl $gitHubPackagesCredential.serverUrl -nuGetToken $gitHubPackagesCredential.token -bcNuGetPackage $package
+                    }
+                }
+            }
+        }
+        elseif ($deliveryTarget -eq "NuGet") {
+            try {
+                $nuGetAccount = $nuGetContext | ConvertFrom-Json | ConvertTo-HashTable
+                $nuGetServerUrl = $nuGetAccount.ServerUrl
+                $nuGetToken = $nuGetAccount.Token
+                Write-Host "NuGetContext OK"
+            }
+            catch {
+                throw "NuGetContext secret is malformed. Needs to be formatted as Json, containing serverUrl and token as a minimum."
+            }
+            $appsfolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-Apps-*") -Directory)
+            if ($appsFolder.Count -eq 0) {
+                throw "Internal error - unable to locate apps folder"
+            }
+            elseif ($appsFolder.Count -gt 1) {
+                $appsFolder | Out-Host
+                throw "Internal error - multiple apps folders located"
+            }
+            $testAppsFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-TestApps-*") -Directory)
+            if ($testAppsFolder.Count -gt 1) {
+                $testAppsFolder | Out-Host
+                throw "Internal error - multiple testApps folders located"
+            }
+            $dependenciesFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-Dependencies-*") -Directory)
+            if ($dependenciesFolder.Count -gt 1) {
+                $dependenciesFolder | Out-Host
+                throw "Internal error - multiple dependencies folders located"
+            }
+
+            $parameters = @{
+                "gitHubRepository" = "$ENV:GITHUB_SERVER_URL/$ENV:GITHUB_REPOSITORY"
+            }
+            $parameters.appFiles = @(Get-Item -Path (Join-Path $appsFolder[0] "*.app") | ForEach-Object { $_.FullName })
+            if ($testAppsFolder.Count -gt 0) {
+                $parameters.testAppFiles = @(Get-Item -Path (Join-Path $testAppsFolder[0] "*.app") | ForEach-Object { $_.FullName })
+            }
+            if ($dependenciesFolder.Count -gt 0) {
+                $parameters.dependencyAppFiles = @(Get-Item -Path (Join-Path $dependenciesFolder[0] "*.app") | ForEach-Object { $_.FullName })
+            }
+            if ($nuGetAccount.ContainsKey('PackageName')) {
+                $parameters.packageId = $nuGetAccount.PackageName.replace('{project}',$projectName).replace('{owner}',$ENV:GITHUB_REPOSITORY_OWNER).replace('{repo}',$env:RepoName)
+            }
+            else {
+                if ($thisProject -and ($thisProject -eq '.')) {
+                    $parameters.packageId = "$($ENV:GITHUB_REPOSITORY_OWNER)-$($env:RepoName)"
+                }
+                else {
+                    $parameters.packageId = "$($ENV:GITHUB_REPOSITORY_OWNER)-$($env:RepoName)-$ProjectName"
+                }
+            }
+            if ($type -eq 'CD') {
+                $parameters.packageId += "-preview"
+            }
+            $parameters.packageVersion = [System.Version]$appsFolder[0].Name.SubString($appsFolder[0].Name.IndexOf("-Apps-")+6)
+            if ($nuGetAccount.ContainsKey('PackageTitle')) {
+                $parameters.packageTitle = $nuGetAccount.PackageTitle
+            }
+            else {
+                 $parameters.packageTitle = $parameters.packageId
+            }
+            if ($nuGetAccount.ContainsKey('PackageDescription')) {
+                $parameters.packageDescription = $nuGetAccount.PackageDescription
+            }
+            else {
+                $parameters.packageDescription = $parameters.packageTitle
+            }
+            if ($nuGetAccount.ContainsKey('PackageAuthors')) {
+                $parameters.packageAuthors = $nuGetAccount.PackageAuthors
+            }
+            else {
+                $parameters.packageAuthors = $actor
+            }
+            $package = New-BcNuGetPackage @parameters
+            Push-BcNuGetPackage -nuGetServerUrl $nuGetServerUrl -nuGetToken $nuGetToken -bcNuGetPackage $package
+        }
         elseif ($deliveryTarget -eq "Storage") {
             try {
                 if (get-command New-AzureStorageContext -ErrorAction SilentlyContinue) {
@@ -207,7 +304,7 @@ try {
                 else {
                     $azStorageContext = New-AzureStorageContext -StorageAccountName $storageAccount.StorageAccountName -StorageAccountKey $storageAccount.StorageAccountKey
                 }
-                Write-Host "Storage Context OK"
+                Write-Host "StorageContext OK"
             }
             catch {
                 throw "StorageContext secret is malformed. Needs to be formatted as Json, containing StorageAccountName, containerName, blobName and sastoken or storageAccountKey, which points to an existing container in a storage account."
@@ -311,6 +408,10 @@ try {
         }
         else {
             throw "Internal error, no handler for $deliveryTarget"
+        }
+
+        if (Test-Path $baseFolder) {
+            Remove-Item $baseFolder -Recurse -Force
         }
     }
 
