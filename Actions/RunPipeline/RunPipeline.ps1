@@ -200,7 +200,7 @@ try {
 
     $additionalCountries = $repo.additionalCountries
 
-    $imageName = ""
+    $imageName = "my"
     if ($repo.gitHubRunner -ne "windows-latest") {
         $imageName = $repo.cacheImageName
         if ($imageName) {
