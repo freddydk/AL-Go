@@ -1,5 +1,5 @@
-# Analyze Tests 
-Analyze results of tests
+# Deploy
+Deliver App to AppSource or Storage
 ## Parameters
 ### actor (default github.actor)
 The GitHub actor running the action
@@ -7,5 +7,5 @@ The GitHub actor running the action
 The GitHub token running the action
 ### parentTelemetryScopeJson (default {})
 Specifies the parent telemetry scope for the telemetry signal
-### projet (required)
-Project to analyze
+### artifactsUrl (required)
+Url of artifacts to deliver
