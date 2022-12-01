@@ -31,7 +31,9 @@ try {
 
     Test-ALGoRepository -baseFolder $ENV:GITHUB_WORKSPACE
 
-    $BcContainerHelperPath = DownloadAndImportBcContainerHelper -baseFolder $ENV:GITHUB_WORKSPACE
+    Install-Module BC -Force
+    Import-Module BC -DisableNameChecking
+#    $BcContainerHelperPath = DownloadAndImportBcContainerHelper -baseFolder $ENV:GITHUB_WORKSPACE
 
     import-module (Join-Path -path $PSScriptRoot -ChildPath "..\TelemetryHelper.psm1" -Resolve)
     $telemetryScope = CreateScope -eventId $eventId
@@ -61,5 +63,7 @@ catch {
     TrackException -telemetryScope $telemetryScope -errorRecord $_
 }
 finally {
-    CleanupAfterBcContainerHelper -bcContainerHelperPath $bcContainerHelperPath
+    Remove-Module BC
+    Uninstall-Module BC
+#    CleanupAfterBcContainerHelper -bcContainerHelperPath $bcContainerHelperPath
 }
