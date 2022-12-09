@@ -28,6 +28,7 @@ jobs:
         id: ChangedFiles
         run: |
           $ErrorActionPreference = "STOP"
+          Set-StrictMode -version 2.0
           $sb = [System.Text.StringBuilder]::new()
           $headers = @{             
               "Authorization" = 'token ${{ secrets.GITHUB_TOKEN }}'

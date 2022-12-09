@@ -12,7 +12,7 @@ runs:
   using: composite
   steps:
     - name: run
-      shell: PowerShell
+      shell: pwsh
       env:
         _eventId: ${{ inputs.eventId }}
         _telemetryScopeJson: ${{ inputs.telemetryScopeJson }}

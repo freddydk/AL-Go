@@ -194,17 +194,21 @@ function DownloadAndImportBcContainerHelper {
     $params = @{ "ExportTelemetryFunctions" = $true }
     if ($baseFolder) {
         $repoSettingsPath = Join-Path $baseFolder $repoSettingsFile
+        Write-Host $repoSettingsPath
         if (-not (Test-Path $repoSettingsPath -PathType Leaf)) {
             $repoSettingsPath = Join-Path $baseFolder "..\$repoSettingsFile"
             if (-not (Test-Path $repoSettingsPath -PathType Leaf)) {
                 $repoSettingsPath = Join-Path $baseFolder "..\..\$repoSettingsFile"
             }
         }
+        Write-Host $repoSettingsPath
+        Write-Host (Test-Path $repoSettingsPath)
         if (Test-Path $repoSettingsPath) {
             if (-not $BcContainerHelperVersion) {
+                Write-Host $repoSettingsPath
                 $repoSettings = Get-Content $repoSettingsPath -Encoding UTF8 | ConvertFrom-Json | ConvertTo-HashTable
                 Write-Host $ENV:GITHUB_ACTION_PATH
-                $ap = "$ENV:GITHUB_ACTION_PATH".Split('\')
+                $ap = "$ENV:GITHUB_ACTION_PATH".Split([System.IO.Path]::DirectorySeparatorChar)
                 if ($ap -and $ap.Count -gt 4) {
                     $folder = $ap[$ap.Count-5]
                     $owner = $ap[$ap.Count-4]
@@ -245,7 +249,7 @@ function DownloadAndImportBcContainerHelper {
         $BcContainerHelperPath = Join-Path (Split-Path $module.Path -parent) "BcContainerHelper.ps1" -Resolve
     }
     else {
-        $tempName = Join-Path $env:TEMP ([Guid]::NewGuid().ToString())
+        $tempName = Join-Path ([System.IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
         $webclient = New-Object System.Net.WebClient
         if ($BcContainerHelperVersion -like "https://*") {
             Write-Host "Downloading BcContainerHelper developer version from $BcContainerHelperVersion"
@@ -327,7 +331,7 @@ function MergeCustomObjectIntoOrderedDictionary {
             if ($srcPropType -eq "PSCustomObject" -and $dstPropType -eq "OrderedDictionary") {
                 MergeCustomObjectIntoOrderedDictionary -dst $dst."$prop" -src $srcProp
             }
-            elseif ($dstPropType -ne $srcPropType) {
+            elseif ($dstPropType -ne $srcPropType -and !($srcPropType -eq "Int64" -and $dstPropType -eq "Int32")) {
                 throw "property $prop should be of type $dstPropType, is $srcPropType."
             }
             else {
@@ -469,7 +473,7 @@ function ReadSettings {
                 }
             }
             catch {
-                throw "Settings file $settingsFile, is wrongly formatted. Error is $($_.Exception.Message)."
+                throw "Settings file $settingsFile, is wrongly formatted. Error is $($_.Exception.Message).`n$($_.ScriptStackTrace)"
             }
         }
     }
@@ -544,7 +548,7 @@ function AnalyzeRepo {
     }
 
     if (-not (@($settings.appFolders)+@($settings.testFolders)+@($settings.bcptTestFolders))) {
-        Get-ChildItem -Path $projectPath -Directory | Where-Object { Test-Path -Path (Join-Path $_.FullName "app.json") } | ForEach-Object {
+        Get-ChildItem -Path $projectPath | Where-Object { $_.PSIsContainer -and (Test-Path -Path (Join-Path $_.FullName "app.json")) } | ForEach-Object {
             $folder = $_
             $appJson = Get-Content (Join-Path $folder.FullName "app.json") -Encoding UTF8 | ConvertFrom-Json
             $isTestApp = $false
@@ -1016,7 +1020,7 @@ function CloneIntoNewFolder {
         [string] $branch
     )
 
-    $baseFolder = Join-Path $env:TEMP ([Guid]::NewGuid().ToString())
+    $baseFolder = Join-Path ([System.IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
     New-Item $baseFolder -ItemType Directory | Out-Null
     Set-Location $baseFolder
     $serverUri = [Uri]::new($env:GITHUB_SERVER_URL)
@@ -1653,7 +1657,7 @@ Function AnalyzeProjectDependencies {
         $project = $_
         Write-Host "- $project"
         $apps = @()
-        $folders = @(Get-ChildItem -Path (Join-Path $basePath $project) -Recurse -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'app.json') } | ForEach-Object { $_.FullName.Substring($basePath.Length+1) } )
+        $folders = @(Get-ChildItem -Path (Join-Path $basePath $project) -Recurse | Where-Object { $_.PSIsContainer -and (Test-Path (Join-Path $_.FullName 'app.json')) } | ForEach-Object { $_.FullName.Substring($basePath.Length+1) } )
         $unknownDependencies = @()
         $apps = @()
         $sortedFolders = Sort-AppFoldersByDependencies -appFolders $folders -baseFolder $basePath -WarningAction SilentlyContinue -unknownDependencies ([ref]$unknownDependencies) -knownApps ([ref]$apps)

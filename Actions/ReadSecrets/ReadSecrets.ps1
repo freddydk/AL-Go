@@ -114,7 +114,7 @@ try {
     $outSecretsJson = $outSecrets | ConvertTo-Json -Compress
     Add-Content -Path $env:GITHUB_ENV -Value "RepoSecrets=$outSecretsJson"
 
-    $outSettingsJson = $outSettings | ConvertTo-Json -Compress
+    $outSettingsJson = $outSettings | ConvertTo-Json -Depth 99 -Compress
     Add-Content -Path $env:GITHUB_ENV -Value "Settings=$OutSettingsJson"
 
     TrackTrace -telemetryScope $telemetryScope

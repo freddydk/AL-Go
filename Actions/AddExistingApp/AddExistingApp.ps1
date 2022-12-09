@@ -18,7 +18,7 @@ function getfiles {
         [string] $url
     )
 
-    $path = Join-Path $env:TEMP "$([Guid]::NewGuid().ToString()).app"
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString()).app"
     Download-File -sourceUrl $url -destinationFile $path
     if (!(Test-Path -Path $path)) {
         throw "could not download the file."
@@ -35,7 +35,7 @@ function expandfile {
 
     if ([string]::new([char[]](Get-Content $path -Encoding byte -TotalCount 2)) -eq "PK") {
         # .zip file
-        $destinationPath = Join-Path $env:TEMP "$([Guid]::NewGuid().ToString())"
+        $destinationPath = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString())"
         Expand-7zipArchive -path $path -destinationPath $destinationPath
     
         $directoryInfo = Get-ChildItem $destinationPath | Measure-Object
@@ -47,13 +47,13 @@ function expandfile {
         if (Test-Path (Join-Path $destinationPath 'app.json')) {
             $appFolders += @($destinationPath)
         }
-        Get-ChildItem $destinationPath -Directory -Recurse | Where-Object { Test-Path -Path (Join-Path $_.FullName 'app.json') } | ForEach-Object {
+        Get-ChildItem $destinationPath -Recurse | Where-Object { $_.PSIsContainer -and (Test-Path -Path (Join-Path $_.FullName 'app.json')) } | ForEach-Object {
             if (!($appFolders -contains $_.Parent.FullName)) {
                 $appFolders += @($_.FullName)
             }
         }
         $appFolders | ForEach-Object {
-            $newFolder = Join-Path $env:TEMP "$([Guid]::NewGuid().ToString())"
+            $newFolder = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString())"
             write-Host "$_ -> $newFolder"
             Move-Item -Path $_ -Destination $newFolder -Force
             Write-Host "done"
@@ -67,7 +67,7 @@ function expandfile {
         }
     }
     elseif ([string]::new([char[]](Get-Content $path -Encoding byte -TotalCount 4)) -eq "NAVX") {
-        $destinationPath = Join-Path $env:TEMP "$([Guid]::NewGuid().ToString())"
+        $destinationPath = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString())"
         Extract-AppFileToFolder -appFilename $path -appFolder $destinationPath -generateAppJson
         $destinationPath        
     }
@@ -163,7 +163,7 @@ try {
             OutputWarning -message "According to settings, repository is for apps of type $type. The app you are adding seams to be of type $ttype"
         }
 
-        $appFolders = Get-ChildItem -Path $appFolder -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'app.json') }
+        $appFolders = Get-ChildItem -Path $appFolder | Where-Object { $_.PSIsContainer -and (Test-Path (Join-Path $_.FullName 'app.json')) }
         if (-not $appFolders) {
             $appFolders = @($appFolder)
             # TODO: What to do about the über app.json - another workspace? another setting?

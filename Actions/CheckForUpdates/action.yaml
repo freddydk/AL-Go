@@ -41,7 +41,7 @@ runs:
   using: composite
   steps:
     - name: run
-      shell: PowerShell
+      shell: pwsh
       env:
         _actor: ${{ inputs.actor }}
         _token: ${{ inputs.token }}

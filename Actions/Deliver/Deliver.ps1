@@ -46,7 +46,7 @@ try {
         $projectList = $settings.projects | Where-Object { $_ -like $projects }
     }
     else {
-        $projectList = @(Get-ChildItem -Path $ENV:GITHUB_WORKSPACE -Directory -Recurse -Depth 2 | Where-Object { Test-Path (Join-Path $_.FullName '.AL-Go\Settings.json') -PathType Leaf } | ForEach-Object { $_.FullName.Substring("$ENV:GITHUB_WORKSPACE".length+1) })
+        $projectList = @(Get-ChildItem -Path $ENV:GITHUB_WORKSPACE -Recurse -Depth 2 | Where-Object { $_.PSIsContainer -and (Test-Path (Join-Path $_.FullName '.AL-Go\Settings.json') -PathType Leaf) } | ForEach-Object { $_.FullName.Substring("$ENV:GITHUB_WORKSPACE".length+1) })
         if (Test-Path (Join-Path $ENV:GITHUB_WORKSPACE ".AL-Go") -PathType Container) {
             $projectList += @(".")
         }
@@ -163,7 +163,7 @@ try {
                 "ProjectSettings" = $projectSettings
             }
 
-            $appsfolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Apps-*.*.*.*") -Directory)
+            $appsfolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Apps-*.*.*.*") | Where-Object { $_.PSIsContainer })
             if ($appsFolder.Count -eq 0) {
                 throw "Internal error - unable to locate apps folder"
             }
@@ -172,7 +172,7 @@ try {
                 throw "Internal error - multiple apps folders located"
             }
             $parameters.appsfolder = $appsfolder[0].FullName
-            $testAppsFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-TestApps-*.*.*.*") -Directory)
+            $testAppsFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-TestApps-*.*.*.*") | Where-Object { $_.PSIsContainer })
             if ($testAppsFolder.Count -gt 1) {
                 $testAppsFolder | Out-Host
                 throw "Internal error - multiple testApps folders located"
@@ -183,7 +183,7 @@ try {
             else {
                 $parameters.testAppsFolder = ""
             }
-            $dependenciesFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Dependencies-*.*.*.*") -Directory)
+            $dependenciesFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Dependencies-*.*.*.*") | Where-Object { $_.PSIsContainer })
             if ($dependenciesFolder.Count -gt 1) {
                 $dependenciesFolder | Out-Host
                 throw "Internal error - multiple dependencies folders located"
@@ -199,7 +199,7 @@ try {
         elseif ($deliveryTarget -eq "GitHubPackages") {
             $githubPackagesCredential = $githubPackagesContext | ConvertFrom-Json
             'Apps' | ForEach-Object {
-                $folder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-$($_)-*.*.*.*") -Directory)
+                $folder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-$($_)-*.*.*.*") | Where-Object { $_.PSIsContainer })
                 if ($folder.Count -gt 1) {
                     $folder | Out-Host
                     throw "Internal error - multiple $_ folders located"
@@ -229,7 +229,7 @@ try {
             catch {
                 throw "NuGetContext secret is malformed. Needs to be formatted as Json, containing serverUrl and token as a minimum."
             }
-            $appsfolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Apps-*.*.*.*") -Directory)
+            $appsfolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Apps-*.*.*.*") | Where-Object { $_.PSIsContainer })
             if ($appsFolder.Count -eq 0) {
                 throw "Internal error - unable to locate apps folder"
             }
@@ -237,12 +237,12 @@ try {
                 $appsFolder | Out-Host
                 throw "Internal error - multiple apps folders located"
             }
-            $testAppsFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-TestApps-*.*.*.*") -Directory)
+            $testAppsFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-TestApps-*.*.*.*") | Where-Object { $_.PSIsContainer })
             if ($testAppsFolder.Count -gt 1) {
                 $testAppsFolder | Out-Host
                 throw "Internal error - multiple testApps folders located"
             }
-            $dependenciesFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Dependencies-*.*.*.*") -Directory)
+            $dependenciesFolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Dependencies-*.*.*.*") | Where-Object { $_.PSIsContainer })
             if ($dependenciesFolder.Count -gt 1) {
                 $dependenciesFolder | Out-Host
                 throw "Internal error - multiple dependencies folders located"
@@ -331,7 +331,7 @@ try {
             $atypes.Split(',') | ForEach-Object {
                 $atype = $_
                 Write-Host "Looking for: $project-$refname-$atype-*.*.*.*"
-                $artfolder = @(Get-ChildItem -Path (Join-Path $baseFolder "$project-$refname-$atype-*.*.*.*") -Directory)
+                $artfolder = @(Get-ChildItem -Path (Join-Path $baseFolder "$project-$refname-$atype-*.*.*.*") | Where-Object { $_.PSIsContainer })
                 if ($artFolder.Count -eq 0) {
                     if ($atype -eq "Apps") {
                         throw "Error - unable to locate apps"
@@ -352,7 +352,7 @@ try {
                     if ($type -eq "Release") {
                         $versions += @($version,"latest")
                     }
-                    $tempFile = Join-Path $ENV:TEMP "$([Guid]::newguid().ToString()).zip"
+                    $tempFile = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::newguid().ToString()).zip"
                     try {
                         Write-Host "Compressing"
                         Compress-Archive -Path (Join-Path $artfolder '*') -DestinationPath $tempFile -Force
@@ -393,7 +393,7 @@ try {
             $mainAppJson = Get-Content -Path (Join-Path $ENV:GITHUB_WORKSPACE "$thisProject\$AppSourceMainAppFolder\app.json") | ConvertFrom-Json
             $mainAppVersion = [Version]$mainAppJson.Version
             $mainAppFileName = ("$($mainAppJson.Publisher)_$($mainAppJson.Name)_".Split([System.IO.Path]::GetInvalidFileNameChars()) -join '') + "*.*.*.*.app"
-            $artfolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Apps-*.*.*.*") -Directory)
+            $artfolder = @(Get-ChildItem -Path (Join-Path $baseFolder "*-$refname-Apps-*.*.*.*") | Where-Object { $_.PSIsContainer })
             if ($artFolder.Count -eq 0) {
                 throw "Internal error - unable to locate apps"
             }

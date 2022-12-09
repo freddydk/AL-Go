@@ -24,7 +24,7 @@ runs:
   using: composite
   steps:
     - name: run
-      shell: PowerShell
+      shell: pwsh
       id: AnalyzeTests
       env:
         _actor: ${{ inputs.actor }}

@@ -13,7 +13,7 @@ runs:
   using: composite
   steps:
     - name: run
-      shell: PowerShell
+      shell: pwsh
       env:
         _project: ${{ inputs.project }}
         _parentTelemetryScopeJson: ${{ inputs.parentTelemetryScopeJson }}

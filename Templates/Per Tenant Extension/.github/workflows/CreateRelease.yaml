@@ -82,6 +82,7 @@ jobs:
         id: analyzeartifacts
         run: |
           $ErrorActionPreference = "STOP"
+          Set-StrictMode -version 2.0
           $projects = '${{ steps.ReadSettings.outputs.ProjectsJson }}' | ConvertFrom-Json
           Write-Host "Projects:"
           $projects | ForEach-Object { Write-Host "- $_" }
@@ -213,6 +214,7 @@ jobs:
       - name: Download artifact
         run: |
           $ErrorActionPreference = "STOP"
+          Set-StrictMode -version 2.0
           Write-Host "Downloading artifact ${{ matrix.name}}"
           $headers = @{ 
               "Authorization" = "token ${{ github.token }}"
@@ -244,6 +246,7 @@ jobs:
         if: ${{ env.NuGetContext }}
         run: |
           $ErrorActionPreference = "STOP"
+          Set-StrictMode -version 2.0
           $nuGetContext = ''
           if ('${{ matrix.atype }}' -eq 'Apps') {
             $nuGetContext = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String([System.Environment]::GetEnvironmentVariable('NuGetContext')))
@@ -267,6 +270,7 @@ jobs:
         if: ${{ env.StorageContext }}
         run: |
           $ErrorActionPreference = "STOP"
+          Set-StrictMode -version 2.0
           $storageContext = ''
           if ('${{ matrix.atype }}' -eq 'Apps') {
             $storageContext = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String([System.Environment]::GetEnvironmentVariable('StorageContext')))
@@ -296,6 +300,7 @@ jobs:
       - name: Create Release Branch
         run: |
           $ErrorActionPreference = "STOP"
+          Set-StrictMode -version 2.0
           git checkout -b release/${{ github.event.inputs.tag }}
           git config user.name ${{ github.actor}}
           git config user.email ${{ github.actor}}@users.noreply.github.com

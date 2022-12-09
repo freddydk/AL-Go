@@ -15,10 +15,11 @@ runs:
   using: composite
   steps:
     - name: run
-      shell: PowerShell
+      shell: pwsh
       id: workflowinitialize
       env:
         _eventId: ${{ inputs.eventId }}
+        _checkPRpermissions: ${{ inputs.checkPRpermissions }}
       run: try { ${{ github.action_path }}/WorkflowInitialize.ps1 -eventId $ENV:_eventId } catch { Write-Host "::Error::Unexpected error when running action ($($_.Exception.Message.Replace("`r",'').Replace("`n",' ')))"; exit 1 }
 branding:
   icon: terminal

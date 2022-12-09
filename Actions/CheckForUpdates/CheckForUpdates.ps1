@@ -111,7 +111,7 @@ try {
         "Accept" = "application/vnd.github.baptiste-preview+json"
     }
     $archiveUrl = $templateInfo.archive_url.Replace('{archive_format}','zipball').replace('{/ref}',"/$templateBranch")
-    $tempName = Join-Path $env:TEMP ([Guid]::NewGuid().ToString())
+    $tempName = Join-Path ([System.IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
     InvokeWebRequest -Headers $headers -Uri $archiveUrl -OutFile "$tempName.zip"
     Expand-7zipArchive -Path "$tempName.zip" -DestinationPath $tempName
     Remove-Item -Path "$tempName.zip"
@@ -124,7 +124,7 @@ try {
         $checkfiles += @(@{ "dstPath" = ".AL-Go"; "srcPath" = ".AL-Go"; "pattern" = "*.ps1"; "type" = "script" })
     }
     else {
-        Get-ChildItem -Path $baseFolder -Directory | Where-Object { Test-Path (Join-Path $_.FullName ".AL-Go") -PathType Container } | ForEach-Object {
+        Get-ChildItem -Path $baseFolder | Where-Object { $_.PSIsContainer -and (Test-Path (Join-Path $_.FullName ".AL-Go") -PathType Container) } | ForEach-Object {
             $checkfiles += @(@{ "dstPath" = Join-Path $_.Name ".AL-Go"; "srcPath" = ".AL-Go"; "pattern" = "*.ps1"; "type" = "script" })
         }
     }
@@ -136,7 +136,7 @@ try {
             $projects = $repoSettings.projects
         }
         else {
-            $projects = @(Get-ChildItem -Path $ENV:GITHUB_WORKSPACE -Directory -Recurse -Depth 2 | Where-Object { Test-Path (Join-Path $_.FullName '.AL-Go\Settings.json') -PathType Leaf } | ForEach-Object { $_.FullName.Substring("$ENV:GITHUB_WORKSPACE".length+1) })
+            $projects = @(Get-ChildItem -Path $ENV:GITHUB_WORKSPACE -Recurse -Depth 2 | Where-Object { $_.PSIsContainer -and (Test-Path (Join-Path $_.FullName '.AL-Go\Settings.json') -PathType Leaf) } | ForEach-Object { $_.FullName.Substring("$ENV:GITHUB_WORKSPACE".length+1) })
         }
         $buildAlso = @{}
         $buildOrder = @{}
@@ -281,7 +281,7 @@ try {
         if ($updateSettings -or ($updateFiles) -or ($removeFiles)) {
             try {
                 # URL for git commands
-                $tempRepo = Join-Path $env:TEMP ([Guid]::NewGuid().ToString())
+                $tempRepo = Join-Path ([System.IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
                 New-Item $tempRepo -ItemType Directory | Out-Null
                 Set-Location $tempRepo
                 $serverUri = [Uri]::new($env:GITHUB_SERVER_URL)
