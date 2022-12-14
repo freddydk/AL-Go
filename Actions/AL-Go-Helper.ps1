@@ -10,9 +10,9 @@ if (Test-Path $gitHubHelperPath) {
 $ErrorActionPreference = "stop"
 Set-StrictMode -Version 2.0
 
-$ALGoFolder = Join-Path '.AL-Go' ''
-$ALGoSettingsFile = Join-Path '.AL-Go' 'settings.json'
-$RepoSettingsFile = Join-Path '.github' 'AL-Go-Settings.json'
+$ALGoFolder = ".AL-Go$([System.IO.Path]::DirectorySeparatorChar)"
+$ALGoSettingsFile = ".AL-Go$([System.IO.Path]::DirectorySeparatorChar)settings.json"
+$RepoSettingsFile = ".github$([System.IO.Path]::DirectorySeparatorChar)AL-Go-Settings.json"
 $defaultCICDPushBranches = @( 'main', 'release/*', 'feature/*' )
 $defaultCICDPullRequestBranches = @( 'main' )
 $runningLocal = $local.IsPresent
@@ -218,12 +218,6 @@ function DownloadAndImportBcContainerHelper {
                 $repoSettings = Get-Content $repoSettingsPath -Encoding UTF8 | ConvertFrom-Json | ConvertTo-HashTable
                 Write-Host $ENV:GITHUB_ACTION_PATH
                 $ap = "$ENV:GITHUB_ACTION_PATH".Split([System.IO.Path]::DirectorySeparatorChar)
-                # Action Path under linux is something like: /home/runner/work/_actions/freddydk/AL-Go-Actions/main/WorkflowInitialize
-                # Action Path under Windows is something like: D:\a\_actions\freddydk\AL-Go-Actions\main\WorkflowInitialize
-                # ..../_actions/<owner>/AL-Go-Actions/branch/Action
-                # ..../   -5   /  -4   /     -3      /  -2  /  -1
-                # The code below checks if you are running a preview branch of AL-Go-Actions - then use Preview ContainerHelper
-                # If you are using a private fork of AL-Go-Actions - then use (if exists) a private fork of ContainerHelper as well
                 if ($ap -and $ap.Count -gt 4) {
                     $folder = $ap[$ap.Count-5]
                     $owner = $ap[$ap.Count-4]
@@ -442,9 +436,10 @@ function ReadSettings {
         "templateBranch"                         = ""
         "appDependencyProbingPaths"              = @()
         "useProjectDependencies"                 = $false
-        "runs-on"                                = "ubuntu-latest"
+        "runs-on"                                = "windows-latest"
         "shell"                                  = "powershell"
         "githubRunner"                           = ""
+        "githubRunnerShell"                      = ""
         "cacheImageName"                         = "my"
         "cacheKeepDays"                          = 3
         "alwaysBuildAllProjects"                 = $false
@@ -500,6 +495,9 @@ function ReadSettings {
         else {
             $settings.githubRunner = $settings."runs-on"
         }
+    }
+    if ($settings.githubRunnerShell -eq "") {
+        $settings.githubRunnerShell = $settings.Shell
     }
     $settings
 }
