@@ -234,7 +234,6 @@ try {
                                     $if = "if: needs.Initialization.outputs.projects$($_)Count > 0"
                                 }
                                 else {
-                                    # Build jobs needs to have a dependency on all previous build jobs
                                     $newBuild += @('')
                                     $ifpart = ""
                                     ($_-1)..1 | ForEach-Object {
