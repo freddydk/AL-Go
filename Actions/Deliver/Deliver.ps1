@@ -248,6 +248,9 @@ try {
                             "packageId" = "AL-Go-{id}"
                         }
                         $parameters.appFiles = $_.FullName
+                        
+                        $parameters | ConvertTo-Json | Out-Host
+
                         $package = New-BcNuGetPackage @parameters
                         Push-BcNuGetPackage -nuGetServerUrl $gitHubPackagesCredential.serverUrl -nuGetToken $gitHubPackagesCredential.token -bcNuGetPackage $package
                     }

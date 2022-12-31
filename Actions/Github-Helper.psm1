@@ -104,6 +104,8 @@ function Get-dependencies {
         New-Item $saveToPath -ItemType Directory | Out-Null
     }
 
+    $probingPathsJson | Out-Host
+
     $downloadedList = @()
     'Apps','TestApps' | ForEach-Object {
         $mask = $_
