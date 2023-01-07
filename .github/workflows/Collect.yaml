@@ -28,6 +28,7 @@ jobs:
             Write-Host "::Error::You cannot run deploy and collect in the microsoft/AL-Go repo"
             exit 1
           }
+          git status --porcelain=v1
 
       - name: Collect
         run: |
