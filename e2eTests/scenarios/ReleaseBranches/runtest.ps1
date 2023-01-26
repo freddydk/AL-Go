@@ -70,6 +70,7 @@ CreateAlGoRepository `
     -template $template `
     -repository $repository `
     -branch $branch `
+    -addRepoSettings @{"doNotPublishApps" = $true} `
     -contentScript {
         Param([string] $path)
         CreateNewAppInFolder -folder $path -name "App" | Out-Null
