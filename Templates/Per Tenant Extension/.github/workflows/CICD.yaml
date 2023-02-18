@@ -468,6 +468,13 @@ jobs:
           settingsJson: ${{ env.Settings }}
           secrets: 'licenseFileUrl,insiderSasToken,codeSignCertificateUrl,codeSignCertificatePassword,keyVaultCertificateUrl,keyVaultCertificatePassword,keyVaultClientId,storageContext,gitHubPackagesContext'
 
+      - name: Cache Business Central Artifacts
+        if: env.artifact && !contains(env.artifact,'INSIDERSASTOKEN')
+        uses: actions/cache@v3
+        with:
+          path: .artifactcache
+          key: ${{ env.artifact }}
+
       - name: Run pipeline
         id: RunPipeline
         uses: microsoft/AL-Go-Actions/RunPipeline@main

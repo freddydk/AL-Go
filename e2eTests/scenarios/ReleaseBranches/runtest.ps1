@@ -70,10 +70,12 @@ CreateAlGoRepository `
     -template $template `
     -repository $repository `
     -branch $branch `
-    -addRepoSettings @{"doNotPublishApps" = $true} `
+    -addRepoSettings @{ "doNotPublishApps" = $true } `
+    -contentPath (Join-Path $PSScriptRoot 'content') `
     -contentScript {
         Param([string] $path)
         CreateNewAppInFolder -folder $path -name "App" | Out-Null
+        Add-PropertiesToJsonFile -path (Join-Path $path '.AL-Go\settings.json') -properties @{ "artifact" = "https://bcartifacts.azureedge.net/sandbox/21.3.51409.52589/us" }
     }
 $repoPath = (Get-Location).Path
 Start-Process $repoPath
@@ -173,4 +175,4 @@ Test-LogContainsFromRun -runid $runRelease1.id -jobName 'Build . - Default' -ste
 
 Set-Location $prevLocation
 
-RemoveRepository -repository $repository -path $repoPath
+#RemoveRepository -repository $repository -path $repoPath

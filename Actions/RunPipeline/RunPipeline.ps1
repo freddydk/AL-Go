@@ -35,10 +35,12 @@ try {
     $telemetryScope = CreateScope -eventId 'DO0080' -parentTelemetryScopeJson $parentTelemetryScopeJson
 
     # Pull docker image in the background
-    $genericImageName = Get-BestGenericImageName
-    Start-Job -ScriptBlock {
-        docker pull --quiet $genericImageName
-    } -ArgumentList $genericImageName | Out-Null
+    if ($isWindows) {
+        $genericImageName = Get-BestGenericImageName
+        Start-Job -ScriptBlock {
+            docker pull --quiet $genericImageName
+        } -ArgumentList $genericImageName | Out-Null
+    }
 
     $containerName = GetContainerName($project)
 
@@ -197,7 +199,7 @@ try {
     $additionalCountries = $repo.additionalCountries
 
     $imageName = ""
-    if ($repo.gitHubRunner -ne "windows-latest") {
+    if ($repo.gitHubRunner -notlike "windows-*" -and $repo.gitHubRunner -notlike "ubuntu-*") {
         $imageName = $repo.cacheImageName
         if ($imageName) {
             Write-Host "::group::Flush ContainerHelper Cache"

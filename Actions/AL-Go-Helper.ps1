@@ -30,8 +30,11 @@ $runAlPipelineOverrides = @(
     "InstallBcAppFromAppSource"
     "SignBcContainerApp"
     "ImportTestDataInBcContainer"
+    "InstallMissingDependencies"
     "RunTestsInBcContainer"
     "GetBcContainerAppRuntimePackage"
+    "GetBestGenericImageName"
+    "GetBcContainerEventLog"
     "RemoveBcContainer"
 )
 
@@ -114,6 +117,8 @@ function OutputWarning {
     }
 }
 
+# Mask a value in the log
+# This is a workaround for the fact that the mask command does not work in the log
 function MaskValueInLog {
     Param(
         [string] $value
