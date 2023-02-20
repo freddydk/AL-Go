@@ -245,7 +245,7 @@ try {
 
                     # CICD, Current, NextMinor and NextMajor workflows all include a build step.
                     # If the dependency depth is higher than 1, we need to add multiple dependent build jobs to the workflow
-                    if ($baseName -eq 'PullRequestHandler' -or $baseName -eq 'CICD' -or $baseName -eq 'Current' -or $baseName -eq 'NextMinor' -or $baseName -eq 'NextMajor') {
+                    if ($baseName -eq 'CICD' -or $baseName -eq 'Current' -or $baseName -eq 'NextMinor' -or $baseName -eq 'NextMajor') {
                         $yaml.Replace('env:/workflowDepth:',"workflowDepth: $depth")
                         if ($depth -gt 1) {
                             # When there are multiple build jobs, we need to add build job specific project list (and count) to the output of the Initialization job
@@ -270,7 +270,7 @@ try {
                                     # Example (depth 1):
                                     #    needs: [ Initialization ]
                                     #    if: needs.Initialization.outputs.projects1Count > 0
-                                    $if = "if: (!failure()) && needs.Initialization.outputs.projects$($_)Count > 0"
+                                    $if = "if: needs.Initialization.outputs.projects$($_)Count > 0"
                                 }
                                 else {
                                     # Subsequent build jobs needs to have a dependency on all previous build jobs
@@ -286,7 +286,7 @@ try {
                                         $needs += @("Build$_")
                                         $ifpart += " && (needs.Build$_.result == 'success' || needs.Build$_.result == 'skipped')"
                                     }
-                                    $if = "if: (!failure()) && (!cancelled())$ifpart && needs.Initialization.outputs.projects$($_)Count > 0"
+                                    $if = "if: always() && (!cancelled())$ifpart && needs.Initialization.outputs.projects$($_)Count > 0"
                                 }
                                 # Replace the if:, the needs: and the strategy/matrix/project: in the build job with the correct values
                                 $build.Replace('if:', $if)
@@ -353,6 +353,10 @@ try {
         }
     }
     else {
+        # Environment variables for hub commands
+        $env:GITHUB_USER = $actor
+        $env:GITHUB_TOKEN = $token
+        
         # $update set, update the files
         if ($updateSettings -or ($updateFiles) -or ($removeFiles)) {
             try {
@@ -362,10 +366,6 @@ try {
                 Set-Location $tempRepo
                 $serverUri = [Uri]::new($env:GITHUB_SERVER_URL)
                 $url = "$($serverUri.Scheme)://$($actor):$($token)@$($serverUri.Host)/$($env:GITHUB_REPOSITORY)"
-
-                # Environment variables for hub commands
-                $env:GITHUB_USER = $actor
-                $env:GITHUB_TOKEN = $token
 
                 # Configure git
                 invoke-git config --global user.email "$actor@users.noreply.github.com"
@@ -488,6 +488,15 @@ try {
         }
         else {
             OutputWarning "No updates available for AL-Go for GitHub."
+        }
+
+        $secrets = gh secret list | ForEach-Object { $_.split("`t")[0] }
+        if ($secrets -notcontains 'ALGoEncryptionKey') {
+            OutputWarning "No AL-Go Encryption Key secret found. Creating one."
+            $encryptionKey = New-Object Byte[] 32
+            [Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($encryptionKey)
+            $encryptionKeyStr = [System.Convert]::ToBase64String($encryptionKey)
+            gh secret set ALGoEncryptionKey --body $encryptionKeyStr
         }
     }
 

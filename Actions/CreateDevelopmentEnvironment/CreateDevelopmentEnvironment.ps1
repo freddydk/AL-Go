@@ -9,6 +9,8 @@ Param(
     [string] $environmentName,
     [Parameter(HelpMessage = "Admin center API credentials", Mandatory = $false)]
     [string] $adminCenterApiCredentials,
+    [Parameter(HelpMessage = "Encryption Key Base 64 String", Mandatory = $false)]
+    [string] $encryptionKeyStr,
     [Parameter(HelpMessage = "Reuse environment if it exists", Mandatory = $false)]
     [bool] $reUseExistingEnvironment,
     [Parameter(HelpMessage = "Direct Commit (Y/N)", Mandatory = $false)]
@@ -32,7 +34,13 @@ try {
     import-module (Join-Path -path $PSScriptRoot -ChildPath "..\TelemetryHelper.psm1" -Resolve)
     $telemetryScope = CreateScope -eventId 'DO0073' -parentTelemetryScopeJson $parentTelemetryScopeJson
 
-    $adminCenterApiCredentials = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($adminCenterApiCredentials))
+    if ($encryptionKeyStr) {
+        $encryptionKey = [System.Convert]::FromBase64String($encryptionKeyStr)
+        $adminCenterApiCredentials = ConvertTo-SecureString -String $adminCenterApiCredentials -Key $encryptionKey | Get-PlainText
+    }
+    else {
+        $adminCenterApiCredentials = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($adminCenterApiCredentials))
+    }
 
     Write-Host "Reading $ALGoSettingsFile"
     $settingsJson = Get-Content $ALGoSettingsFile -Encoding UTF8 | ConvertFrom-Json
