@@ -34,8 +34,8 @@ try {
     import-module (Join-Path -path $PSScriptRoot -ChildPath "..\TelemetryHelper.psm1" -Resolve)
     $telemetryScope = CreateScope -eventId 'DO0080' -parentTelemetryScopeJson $parentTelemetryScopeJson
 
-    # Pull docker image in the background
     if ($isWindows) {
+        # Pull docker image in the background
         $genericImageName = Get-BestGenericImageName
         Start-Job -ScriptBlock {
             docker pull --quiet $genericImageName
@@ -81,7 +81,13 @@ try {
         Set-Variable -Name $_ -Value $value
     }
 
-    $repo = AnalyzeRepo -settings $settings -token $token -baseFolder $baseFolder -project $project -insiderSasToken $insiderSasToken
+    $addParams = @{}
+    if (Test-Path (Join-Path $ENV:GITHUB_WORKSPACE '.artifactcache')) {
+        Write-Host "Folder exists, do not download artifacts"
+        $addParams = @{ "doNotCheckArtifactSetting" = $true }
+    }
+
+    $repo = AnalyzeRepo -settings $settings -token $token -baseFolder $baseFolder -project $project -insiderSasToken $insiderSasToken @addParams
     if ((-not $repo.appFolders) -and (-not $repo.testFolders)) {
         Write-Host "Repository is empty, exiting"
         exit
