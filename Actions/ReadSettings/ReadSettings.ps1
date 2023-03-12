@@ -98,6 +98,7 @@ try {
 
     if ($ENV:GITHUB_EVENT_NAME -eq "pull_request") {
         $settings.doNotSignApps = $true
+        $settings.versioningStrategy = 15
     }
 
     if ($settings.appBuild -eq [int32]::MaxValue) {
@@ -256,6 +257,12 @@ try {
             }
             $includeEnvironment
         })
+
+        if (!($environments)) {
+            if ($getenvironments -notcontains '*' -and $getenvironments -notcontains '?' -and $getenvironments -notcontains ',') {
+                $environments = @($getenvironments)
+            }
+        }
 
         $json = @{"matrix" = @{ "include" = @() }; "fail-fast" = $false }
         $environments | Select-Object -Unique | ForEach-Object { 

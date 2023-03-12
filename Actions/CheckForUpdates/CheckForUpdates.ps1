@@ -353,6 +353,10 @@ try {
         }
     }
     else {
+        # Environment variables for hub commands
+        $env:GITHUB_USER = $actor
+        $env:GITHUB_TOKEN = $token
+
         # $update set, update the files
         if ($updateSettings -or ($updateFiles) -or ($removeFiles)) {
             try {
@@ -362,10 +366,6 @@ try {
                 Set-Location $tempRepo
                 $serverUri = [Uri]::new($env:GITHUB_SERVER_URL)
                 $url = "$($serverUri.Scheme)://$($actor):$($token)@$($serverUri.Host)/$($env:GITHUB_REPOSITORY)"
-
-                # Environment variables for hub commands
-                $env:GITHUB_USER = $actor
-                $env:GITHUB_TOKEN = $token
 
                 # Configure git
                 invoke-git config --global user.email "$actor@users.noreply.github.com"
