@@ -41,6 +41,10 @@ inputs:
     description: Specifies which properties to get from the settings file, default is all
     required: false
     default: ''
+  checkArtifactSetting:
+    description: Check Artifacts setting
+    required: false
+    default: ''
 outputs:
   SettingsJson:
     description: Settings in compressed Json format
@@ -91,7 +95,8 @@ runs:
         _includeProduction: ${{ inputs.includeProduction }}
         _release: ${{ inputs.release }}
         _get: ${{ inputs.get }}
-      run: try { ${{ github.action_path }}/ReadSettings.ps1 -actor $ENV:_actor -token $ENV:_token -parentTelemetryScopeJson $ENV:_parentTelemetryScopeJson -project $ENV:_project -getProjects ($ENV:_getProjects -eq 'Y') -getenvironments $ENV:_getenvironments -includeProduction ($ENV:_includeProduction -eq 'Y') -release ($ENV:_release -eq 'Y') -get $ENV:_get } catch { Write-Host "::Error::Unexpected error when running action ($($_.Exception.Message.Replace("`r",'').Replace("`n",' ')))"; exit 1 }
+        _checkArtifactSetting: ${{ inputs.checkArtifactSetting }}
+      run: try { ${{ github.action_path }}/ReadSettings.ps1 -actor $ENV:_actor -token $ENV:_token -parentTelemetryScopeJson $ENV:_parentTelemetryScopeJson -project $ENV:_project -getProjects ($ENV:_getProjects -eq 'Y') -getenvironments $ENV:_getenvironments -includeProduction ($ENV:_includeProduction -eq 'Y') -release ($ENV:_release -eq 'Y') -get $ENV:_get -checkArtifactSetting ($ENV:_checkArtifactSetting -eq 'Y') } catch { Write-Host "::Error::Unexpected error when running action ($($_.Exception.Message.Replace("`r",'').Replace("`n",' ')))"; exit 1 }
 branding:
   icon: terminal
   color: blue

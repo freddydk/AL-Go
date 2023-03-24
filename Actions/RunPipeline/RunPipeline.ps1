@@ -81,7 +81,11 @@ try {
         Set-Variable -Name $_ -Value $value
     }
 
-    $repo = AnalyzeRepo -settings $settings -token $token -baseFolder $baseFolder -project $project -insiderSasToken $insiderSasToken
+    $addParams = @{}
+    if (($settings.gitHubRunner -like "windows-*" -or $settings.gitHubRunner -like "ubuntu-*") -and (Test-Path -Path '.artifactCache')) {
+        $addParams = @{ "doNotCheckArtifactSetting" = $true }
+    }
+    $repo = AnalyzeRepo -settings $settings -token $token -baseFolder $baseFolder -project $project -insiderSasToken $insiderSasToken @addParams
     if ((-not $repo.appFolders) -and (-not $repo.testFolders)) {
         Write-Host "Repository is empty, exiting"
         exit
@@ -365,6 +369,7 @@ try {
 
     Write-Host "Invoke Run-AlPipeline with buildmode $buildMode"
     Run-AlPipeline @runAlPipelineParams `
+        -doNotUseDocker `
         -pipelinename $workflowName `
         -containerName $containerName `
         -imageName $imageName `

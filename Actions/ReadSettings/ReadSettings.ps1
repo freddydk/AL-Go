@@ -16,7 +16,9 @@ Param(
     [Parameter(HelpMessage = "Indicates whether this is called from a release pipeline", Mandatory = $false)]
     [bool] $release,
     [Parameter(HelpMessage = "Specifies which properties to get from the settings file, default is all", Mandatory = $false)]
-    [string] $get = ""
+    [string] $get = "",
+    [Parameter(HelpMessage = "Check Artifacts setting", Mandatory = $false)]
+    [bool] $CheckArtifactSetting
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,6 +37,14 @@ try {
     $telemetryScope = CreateScope -eventId 'DO0079' -parentTelemetryScopeJson $parentTelemetryScopeJson
 
     $settings = ReadSettings -baseFolder $baseFolder -project $project
+    if ($checkartifactsetting -and !($settings.artifact.Contains('{INSIDERSASTOKEN}'))) {
+        $settings.artifact = CheckArtifactSetting -settings $settings -doNotIssueWarnings
+        $version = $settings.artifact.split('/')[4]
+        $country = $settings.artifact.split('/')[5]
+        if ($settings.gitHubRunner -like "windows-*" -or $settings.gitHubRunner -like "ubuntu-*") {
+            Add-Content -Path $env:GITHUB_ENV -Value "artifactCacheKey=$version-$country"
+        }
+    }
     if ($get) {
         $getSettings = $get.Split(',').Trim()
     }
