@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           lfs: true
-          ref: refs/pull/${{ github.event.number }}/merge
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - uses: microsoft/AL-Go-Actions/VerifyPRChanges@main
         with:
@@ -57,7 +57,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           lfs: true
-          ref: refs/pull/${{ github.event.number }}/merge
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Initialize the workflow
         id: init
@@ -104,7 +104,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           lfs: true
-          ref: refs/pull/${{ github.event.number }}/merge
+          ref: ${{ github.event.pull_request.head.sha }}
     
       - name: Download thisbuild artifacts
         if: env.workflowDepth > 1
@@ -247,7 +247,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           lfs: true
-          ref: refs/pull/${{ github.event.number }}/merge
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Finalize the workflow
         id: PostProcess
