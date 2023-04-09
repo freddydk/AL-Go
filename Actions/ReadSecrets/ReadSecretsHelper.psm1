@@ -14,6 +14,9 @@ function MaskValue {
         [string] $value
     )
 
+    if ($key -eq "AuthContext.TenantID" -or $key -eq "AuthContext.Scopes") {
+        return
+    }
     Write-Host "Masking value for $key"
     Write-Host "::add-mask::$value"
 
