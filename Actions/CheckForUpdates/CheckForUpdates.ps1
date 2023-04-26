@@ -64,7 +64,7 @@ try {
     # if $update is set to false, CheckForUpdates will only check for updates and output a warning if there are updates available
 
     # Get Repo settings as a hashtable
-    $repoSettings = ReadSettings -project '' -workflowName '' -userName '' -branchName ''
+    $repoSettings = [hashtable](ReadSettings -project '' -workflowName '' -userName '' -branchName '')
     $unusedALGoSystemFiles = @()
     if ($repoSettings.Keys -contains "unusedALGoSystemFiles") {
         $unusedALGoSystemFiles = $repoSettings.unusedALGoSystemFiles
@@ -224,16 +224,14 @@ try {
                     # - Update AL-Go System files is needed for changing runs-on - by having non-functioning runners, you might dead-lock yourself
                     # - Pull Request Handler workflow for security reasons
                     if ($baseName -ne "UpdateGitHubGoSystemFiles" -and $baseName -ne "PullRequestHandler") {
+                        Write-Host $baseName
                         if ($repoSettings.Keys -contains "runs-on") {
-                            $runson = $repoSettings."runs-on"
-                            $yaml.ReplaceAll('runs-on: [ windows-latest ]', "runs-on: [ $runson ]")
-                            if ($runson -like 'ubuntu-*' -and $repoSettings.Keys -notcontains "shell") {
-                                # Default shell for Ubuntu (Linux) is pwsh
-                                $repoSettings.shell = "pwsh"
-                            }
+                            Write-Host "replace runs-on with $($repoSettings."runs-on")"
+                            $yaml.ReplaceAll('runs-on: [ windows-latest ]', "runs-on: [ $($repoSettings."runs-on") ]")
                         }
                         if ($repoSettings.Keys -contains "shell") {
-                            $yaml.ReplaceAll('shell: powershell', "shell: $($repoSettings."shell")")
+                            Write-Host "replace shell with $($repoSettings.shell)"
+                            $yaml.ReplaceAll('shell: powershell', "shell: $($repoSettings.shell)")
                         }
                     }
 
