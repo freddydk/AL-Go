@@ -3,6 +3,8 @@ Param(
     [string] $actor,
     [Parameter(HelpMessage = "The GitHub token running the action", Mandatory = $false)]
     [string] $token,
+    [Parameter(HelpMessage = "The GitHub token running the action", Mandatory = $false)]
+    [string] $ghTokenWorkflow,
     [Parameter(HelpMessage = "Specifies the parent telemetry scope for the telemetry signal", Mandatory = $false)]
     [string] $parentTelemetryScopeJson = '7b7d',
     [Parameter(HelpMessage = "URL of the template repository (default is the template repository used to create the repository)", Mandatory = $false)]
@@ -35,13 +37,24 @@ try {
     $telemetryScope = CreateScope -eventId 'DO0071' -parentTelemetryScopeJson $parentTelemetryScopeJson
 
     if ($update) {
-        if (-not $token) {
-            throw "A personal access token with permissions to modify Workflows is needed. You must add a secret called GhTokenWorkflow containing a personal access token. You can Generate a new token from https://github.com/settings/tokens. Make sure that the workflow scope is checked."
+        if ($ghTokenWorkflow) {
+            Write-Host "ghtokenworkflow set"
+            $token = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($ghTokenWorkflow))
         }
-        else {
-            $token = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($token))
+        elseif ($token) {
+            Write-host "token set"
+            try {
+                # old calling convention might have token being a base64 encoded string
+                $token = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($token))
+                Write-Host "Old calling convention for token detected. Please update your workflow to use the new calling convention"
+            }
+            catch {
+                Write-Host "token $token"
+            }
         }
     }
+
+    Write-Host "Running as $actor"
 
     # Support old calling convention
     if (-not $templateUrl.Contains('@')) {
@@ -345,7 +358,7 @@ try {
     else {
         # $update set, update the files
         if ($updateSettings -or ($updateFiles) -or ($removeFiles)) {
-            try {
+#            try {
                 # URL for git commands
                 $tempRepo = Join-Path ([System.IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
                 New-Item $tempRepo -ItemType Directory | Out-Null
@@ -466,15 +479,15 @@ try {
                 else {
                     Write-Host "No changes detected in files"
                 }
-            }
-            catch {
-                if ($directCommit) {
-                    throw "Failed to update AL-Go System Files. Make sure that the personal access token, defined in the secret called GhTokenWorkflow, is not expired and it has permission to update workflows. (Error was $($_.Exception.Message))"
-                }
-                else {
-                    throw "Failed to create a pull-request to AL-Go System Files. Make sure that the personal access token, defined in the secret called GhTokenWorkflow, is not expired and it has permission to update workflows. (Error was $($_.Exception.Message))"
-                }
-            }
+#            }
+#            catch {
+#                if ($directCommit) {
+#                    throw "Failed to update AL-Go System Files. Make sure that the personal access token, defined in the secret called GhTokenWorkflow, is not expired and it has permission to update workflows. (Error was $($_.Exception.Message))"
+#                }
+#                else {
+#                    throw "Failed to create a pull-request to AL-Go System Files. Make sure that the personal access token, defined in the secret called GhTokenWorkflow, is not expired and it has permission to update workflows. (Error was $($_.Exception.Message))"
+#                }
+#            }
         }
         else {
             OutputWarning "No updates available for AL-Go for GitHub."

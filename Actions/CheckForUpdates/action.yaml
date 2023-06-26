@@ -17,6 +17,10 @@ inputs:
     description: The GitHub token running the action
     required: false
     default: ${{ github.token }}
+  ghTokenWorkflow:
+    description: The ghTokenWorkflow secret
+    required: false
+    default: ''
   parentTelemetryScopeJson:
     description: Specifies the parent telemetry scope for the telemetry signal
     required: false
@@ -49,13 +53,14 @@ runs:
       env:
         _actor: ${{ inputs.actor }}
         _token: ${{ inputs.token }}
+        _ghTokenWorkflow: ${{ inputs.ghTokenWorkflow }}
         _parentTelemetryScopeJson: ${{ inputs.parentTelemetryScopeJson }}
         _templateUrl: ${{ inputs.templateUrl }}
         _templateBranch: ${{ inputs.templateBranch }}
         _update: ${{ inputs.update }}
         _updateBranch: ${{ inputs.updateBranch }}
         _directCommit: ${{ inputs.directCommit }}
-      run: try { ${{ github.action_path }}/CheckForUpdates.ps1 -actor $ENV:_actor -token $ENV:_token -parentTelemetryScopeJson $ENV:_parentTelemetryScopeJson -templateUrl $ENV:_templateUrl -templateBranch $ENV:_templateBranch -update ($ENV:_update -eq 'Y') -updateBranch $ENV:_updateBranch -directCommit ($ENV:_directCommit -eq 'Y') } catch { Write-Host "::Error::Unexpected error when running action ($($_.Exception.Message.Replace("`r",'').Replace("`n",' ')))"; exit 1 }
+      run: try { ${{ github.action_path }}/CheckForUpdates.ps1 -actor $ENV:_actor -token $ENV:_token -ghTokenWorkflow $ENV:_ghTokenWorkflow -parentTelemetryScopeJson $ENV:_parentTelemetryScopeJson -templateUrl $ENV:_templateUrl -templateBranch $ENV:_templateBranch -update ($ENV:_update -eq 'Y') -updateBranch $ENV:_updateBranch -directCommit ($ENV:_directCommit -eq 'Y') } catch { Write-Host "::Error::Unexpected error when running action ($($_.Exception.Message.Replace("`r",'').Replace("`n",' ')))"; exit 1 }
 branding:
   icon: terminal
   color: blue
