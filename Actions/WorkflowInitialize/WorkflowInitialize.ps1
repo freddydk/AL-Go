@@ -27,6 +27,8 @@ try {
         $verstr = $branch
     }
 
+    Write-Big -str "1111111"
+
     Write-Big -str "a$verstr"
 
     Test-ALGoRepository -baseFolder $ENV:GITHUB_WORKSPACE
