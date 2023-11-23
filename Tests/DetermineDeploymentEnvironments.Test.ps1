@@ -44,6 +44,8 @@ Describe "DetermineDeploymentEnvironments Action Test" {
             "DeploymentEnvironmentsJson" = "Deployment Environments with settings in compressed JSON format"
             "EnvironmentCount" = "Number of Deployment Environments"
             "UnknownEnvironment" = "Flag determining whether the environment is unknown"
+            "GenerateALDocArtifact" = "Flag determining whether to generate the ALDoc artifact"
+            "DeployALDocArtifact" = "Flag determining whether to deploy the ALDoc artifact to GitHub Pages"
         }
         YamlTest -scriptRoot $scriptRoot -actionName $actionName -actionScript $actionScript -permissions $permissions -outputs $outputs
     }
@@ -54,7 +56,7 @@ Describe "DetermineDeploymentEnvironments Action Test" {
             return (ConvertTo-Json -Compress -Depth 99 -InputObject @{ "environments" = @( @{ "name" = "test"; "protection_rules" = @() }, @{ "name" = "another"; "protection_rules" = @() } ) })
         }
 
-        $env:Settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @(); "excludeEnvironments" = @( 'github_pages' ) } | ConvertTo-Json -Compress
+        $env:Settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @(); "excludeEnvironments" = @( 'github-pages' ); "ALDoc" = @{ "ContinuousDeployment" = $false; "DeployToGitHubPages" = $false } } | ConvertTo-Json -Compress
         . (Join-Path $scriptRoot $scriptName) -getEnvironments '*' -type 'CD'
         PassGeneratedOutput
         $EnvironmentsMatrixJson | ConvertFrom-Json | ConvertTo-HashTable -recurse | Should -MatchHashtable @{"matrix"=@{"include"=@(@{"environment"="another";"os"="[""ubuntu-latest""]"};@{"environment"="test";"os"="[""ubuntu-latest""]"})};"fail-fast"=$false}
@@ -77,7 +79,7 @@ Describe "DetermineDeploymentEnvironments Action Test" {
             return (ConvertTo-Json -Compress -Depth 99 -InputObject @( @{ "name" = "branch"; "protected" = $true }, @{ "name" = "main"; "protected" = $false } ))
         }
 
-        $env:Settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @(); "excludeEnvironments" = @( 'github_pages' ) } | ConvertTo-Json -Compress
+        $env:Settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @(); "excludeEnvironments" = @( 'github-pages' ); "ALDoc" = @{ "ContinuousDeployment" = $false; "DeployToGitHubPages" = $false } } | ConvertTo-Json -Compress
         . (Join-Path $scriptRoot $scriptName) -getEnvironments '*' -type 'CD'
         PassGeneratedOutput
         $EnvironmentsMatrixJson | ConvertFrom-Json | ConvertTo-HashTable -recurse | Should -MatchHashtable @{"matrix"=@{"include"=@(@{"environment"="another";"os"="[""ubuntu-latest""]"})};"fail-fast"=$false}
@@ -102,7 +104,7 @@ Describe "DetermineDeploymentEnvironments Action Test" {
             return @{ "branch_policies" = @( @{ "name" = "branch" }, @{ "name" = "branch2" } ) } | ConvertTo-Json -Depth 99 -Compress
         }
 
-        $env:Settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @(); "excludeEnvironments" = @( 'github_pages' ) } | ConvertTo-Json -Compress
+        $env:Settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @(); "excludeEnvironments" = @( 'github-pages' ); "ALDoc" = @{ "ContinuousDeployment" = $false; "DeployToGitHubPages" = $false } } | ConvertTo-Json -Compress
         # Only another environment should be included when deploying from main
         . (Join-Path $scriptRoot $scriptName) -getEnvironments '*' -type 'CD'
         PassGeneratedOutput
@@ -150,7 +152,7 @@ Describe "DetermineDeploymentEnvironments Action Test" {
             return (ConvertTo-Json -Compress -Depth 99 -InputObject @{ "environments" = @( @{ "name" = "test"; "protection_rules" = @() }; @{ "name" = "another"; "protection_rules" = @() } ) })
         }
 
-        $settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @("settingsenv"); "excludeEnvironments" = @( 'github_pages' ) }
+        $settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @("settingsenv"); "excludeEnvironments" = @( 'github-pages' ); "ALDoc" = @{ "ContinuousDeployment" = $false; "DeployToGitHubPages" = $false } }
         $env:Settings = $settings | ConvertTo-Json -Compress
         . (Join-Path $scriptRoot $scriptName) -getEnvironments '*' -type 'CD'
         PassGeneratedOutput
@@ -191,7 +193,7 @@ Describe "DetermineDeploymentEnvironments Action Test" {
         }
 
         # One PROD environment and one non-PROD environment - only non-PROD environment is selected for CD
-        $settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @("test (PROD)","another"); "excludeEnvironments" = @( 'github_pages' ) }
+        $settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @("test (PROD)","another"); "excludeEnvironments" = @( 'github-pages' ); "ALDoc" = @{ "ContinuousDeployment" = $false; "DeployToGitHubPages" = $false } }
         $env:Settings = $settings | ConvertTo-Json -Compress
         . (Join-Path $scriptRoot $scriptName) -getEnvironments '*' -type 'CD'
         PassGeneratedOutput
@@ -208,7 +210,7 @@ Describe "DetermineDeploymentEnvironments Action Test" {
 
     # 2 environments defined in Settings - one PROD and one non-PROD (settings based)
     It 'Test calling action directly - 2 environments defined in Settings - one PROD and one non-PROD (settings based)' {
-        $settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @("test (PROD)","another"); "excludeEnvironments" = @( 'github_pages' ) }
+        $settings = @{ "type" = "PTE"; "runs-on" = "ubuntu-latest"; "environments" = @("test (PROD)","another"); "excludeEnvironments" = @( 'github-pages' ); "ALDoc" = @{ "ContinuousDeployment" = $false; "DeployToGitHubPages" = $false } }
 
         Mock InvokeWebRequest -ParameterFilter { $uri -like '*/environments' } -MockWith {
             throw "Not supported"

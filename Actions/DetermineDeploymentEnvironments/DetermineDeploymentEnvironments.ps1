@@ -6,6 +6,19 @@
     [string] $type
 )
 
+function IsGitHubPagesAvailable() {
+    $headers = GetHeader -token $env:GITHUB_TOKEN
+    $url = "$($ENV:GITHUB_API_URL)/repos/$($ENV:GITHUB_REPOSITORY)/pages"
+    try {
+        Write-Host "Requesting GitHub Pages settings from GitHub"
+        $ghPages = InvokeWebRequest -Headers $headers -Uri $url -ignoreErrors | ConvertFrom-Json
+        return ($ghPages.build_type -eq 'workflow')
+    }
+    catch {
+        return $false
+    }
+}
+
 function GetGitHubEnvironments() {
     $headers = GetHeader -token $env:GITHUB_TOKEN
     $url = "$($ENV:GITHUB_API_URL)/repos/$($ENV:GITHUB_REPOSITORY)/environments"
@@ -46,6 +59,22 @@ function Get-BranchesFromPolicy($ghEnvironment) {
 . (Join-Path -Path $PSScriptRoot -ChildPath "..\AL-Go-Helper.ps1" -Resolve)
 
 $settings = $env:Settings | ConvertFrom-Json | ConvertTo-HashTable -recurse
+
+$generateALDocArtifact = ($type -eq 'Publish') -or $settings.ALDoc.ContinuousDeployment
+Add-Content -Encoding UTF8 -Path $env:GITHUB_OUTPUT -Value "GenerateALDocArtifact=$([int]$generateALDocArtifact)"
+Write-Host "GenerateALDocArtifact=$([int]$generateALDocArtifact)"
+
+$deployToGitHubPages = $settings.ALDoc.DeployToGitHubPages
+if ($deployToGitHubPages) {
+    $deployToGitHubPages = IsGitHubPagesAvailable
+}
+Add-Content -Encoding UTF8 -Path $env:GITHUB_OUTPUT -Value "DeployALDocArtifact=$([int]$deployToGitHubPages)"
+Write-Host "DeployALDocArtifact=$([int]$deployToGitHubPages)"
+
+if ($getEnvironments -eq '-') {
+    exit 0
+}
+
 Write-Host "Environment pattern to use: $getEnvironments"
 $ghEnvironments = @(GetGitHubEnvironments)
 

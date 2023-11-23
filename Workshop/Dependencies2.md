@@ -5,12 +5,10 @@ With AL-Go for GitHub, the recommendation is to create a Common repository, whic
 
 So, let's setup a single-project common repository like this. Navigate to https://aka.ms/algopte to create a new repository. Click Use this template and select Create a new repository. Select your organization as owner, specify a name and select Public.
 
-| ![image](https://user-images.githubusercontent.com/10775043/232203510-095f1f0d-e407-413d-9e17-7a3e3e43b821.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/c79dac2e-bf52-4f3a-b86e-6a3f8cc1f392) |
 |-|
 
-Run Update **AL-Go System Files** with **microsoft/AL-Go-PTE@preview** as the template URL and **Y** in Direct Commit.
-
-When upgrade is done, create 2 apps within the repository using the **Create a new app** workflow called **Common** and **Licensing**, using the following parameters:
+Create 2 apps within the repository using the **Create a new app** workflow called **Common** and **Licensing**, using the following parameters:
 
 | Name | Value |
 | :-- | :-- |
@@ -34,7 +32,7 @@ and
 
 Leaving out the sample code in order to avoid name clashes.
 
-| ![image](https://user-images.githubusercontent.com/10775043/232205313-3e3df750-55d3-44ac-bb27-40f84971a9a0.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/94ec923f-9e6a-4dc4-a689-b70ab4290e55) |
 |-|
 
 Wait for both workflows to complete.
@@ -43,7 +41,7 @@ Under **Code** locate the **app.json** file for the **Common** app and copy **id
 
 Now locate the **app.json** file for the **Licensing** app and create a dependency to the **Common** app and commit the changes.
 
-| ![image](https://user-images.githubusercontent.com/10775043/232205817-c0c2adef-a61f-4406-8880-5d7db55c7804.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/f9918c5e-7363-46a1-8d3d-2a3acc7efa0c) |
 |-|
 
 Also copy the **id**, **name**, **publisher** and **version** from the **Licensing** app to the clipboard as well.
@@ -54,12 +52,12 @@ Now, navigate back to your multi-project repository, which you created [here](Pr
 
 Add a dependency to the **Licensing** app from the **Common** repository, from the **mysolution.w1** app in the **W1** project.
 
-| ![image](https://user-images.githubusercontent.com/10775043/232206403-bd93b016-3fe5-44fa-8aae-057323735034.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/6149aa2f-8bbc-4b63-9190-371a27ca593d) |
 |-|
 
 And as expected, the builds will fail.
 
-| ![image](https://user-images.githubusercontent.com/10775043/232211698-943bdad0-18e8-4163-94b7-3e77a4bad486.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/352d9170-43dc-431f-8e3d-503caab289d7) |
 |-|
 
 In this example using the **include** mechanism, but builds would also fail when using **useProjectDependencies**.
@@ -68,69 +66,94 @@ In this workshop, I will describe two ways to to make this work.
 
 ## Using appDependencyProbingPaths
 
-Now your organization variable ALGoOrgSettings, and add:
+In the MySolution repository, navigate to Settings -> Secrets and Variables -> Actions and select Variables. Create a new repository variable called **ALGOREPOSETTINGS** with this content:
 
-```
-    "appDependencyProbingPaths": [
-        {
-            "repo": "freddydkorg/Common",
-            "release_status": "latestBuild"
-        }
-    ]
+```json
+  "appDependencyProbingPaths": [
+    {
+      "repo": "freddydkorg/Common",
+      "release_status": "latestBuild"
+    }
+  ]
 ```
 
-| ![image](https://user-images.githubusercontent.com/10775043/232247041-b9e20016-b734-4a39-9f87-e28a7af9d354.png) |
+replacing **freddydkorg** with your organization name obviously.
+
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/2dee232d-5e00-4349-a581-e02828eed4b0) |
 |-|
 
-This setting means that all repositories in this organization will download the **latest build** from **freddydkorg/Common** and a subsequent build will succeed.
+This setting means that all projects in this repository will download the **latest build** from **freddydkorg/Common** and a subsequent build will succeed.
 
-| ![image](https://user-images.githubusercontent.com/10775043/232249808-bed9cb0c-e73d-422e-a629-1373dc128c13.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/f1cca350-9177-4d88-adb7-572bcd14b116) |
 |-|
 
-If we had added the**appDependencyProbingPaths** only to the **W1** project, then the **W1** project would **succeed** and the **DK** and **US** projects **fail**. The reason for this is that we are using the **include** mechanism, which includes the source of **W1** in **DK** and **US**, but it doesn't add the **appDependencyProbingPaths** from **W1**.
+If we had added the**appDependencyProbingPaths** only to the **W1** project, then the **W1** project would **succeed** and the **DK** and **US** projects **fail**. The reason for this is that we are using the **include** mechanism, which includes the source of **W1** in **DK** and **US**, but it doesn't add the **appDependencyProbingPaths** and other settings from **W1**.
 
 ## Using GitHub Packages
 
 If you already added appDependencyProbingPaths, then please remove these settings before continuing, making your build fail again.
 
 In order to use GitHub Packages for dependency resolution, we need to create an organizational secret called **GitHubPackagesContext**. The format of this secret needs to be **compressed JSON** containing two values: **serverUrl** and **token**. Example:
-```
+
+```json
 {"token":"ghp_XXXX","serverUrl":"https://nuget.pkg.github.com/freddydkorg/index.json"}
 ```
 
-Where **ghp_XXX** should be replaced by your **personal access token** with permissions to **Packages** and **freddydkorg** should be replaced by your **organization name**.
+Where **ghp_XXX** should be replaced by a **personal access token** with permissions to **write:packages** and **freddydkorg** should be replaced by your **organization name**.
+
+> [!NOTE]
+> Fine-grained personal access tokens doesn't support packages at this time, you need to use classic personal access tokens.
 
 You can also use BcContainerHelper and the function **New-ALGoNuGetContext** to create a JSON structure in the right format.
 
 Go to your organization settings and create an **organizational secret** called **GitHubPackagesContext** with the value above.
 
-| ![image](https://user-images.githubusercontent.com/10775043/232253023-7131dba1-1be1-4cac-8786-27715899200b.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/bd7ae71b-88b8-490c-a7bf-12792c59634b) |
 |-|
 
 Now, navigate to your **Common** repository and run the **CI/CD** Workflow. Inspect the workflow summary after completion:
 
-| ![image](https://user-images.githubusercontent.com/10775043/232253742-7728e4a2-587e-40fa-a547-4c95ba4e9951.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/4a449287-2521-49b1-b5c9-e57d7047319f) |
 |-|
 
-Notice the **Deliver to GitHub Packages** job, by creating the **GitHubPackagesContext** secret, you have enabled Continuous Delivery to GitHub Packages.
+Notice the **Deliver to GitHubPackages** job. By creating the **GitHubPackagesContext** secret, you have enabled Continuous Delivery to GitHub Packages.
 
-Now, navigate to your organization and select **Packages** and you will see GitHub Packages created for the two apps in **Common**.
+Now, click **Code** and see that you have 2 Packages delivered from the repository:
 
-| ![image](https://user-images.githubusercontent.com/10775043/232253790-7aee6c91-a858-4dd9-b85c-5f22a67394b5.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/eeeb6675-f565-47c6-8582-5c94c2b26971) |
 |-|
 
-Next, navigate to your **MySolution** repository and run the **CI/CD** workflow and magically, all dependencies are now also resolved.
+Click **Packages**, which will take you to Packages in your organizational profile. All packages are stored on the organization with a link to the owning repository:
 
-| ![image](https://user-images.githubusercontent.com/10775043/232286871-845f02ea-a59a-46e8-b720-5ff1d6927ffe.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/010defe6-b3a7-4585-9326-d0d1de303157) |
 |-|
 
-And GitHub Packages have been published for the 3 apps in MySolution as well
+Next, navigate to your **MySolution** repository (where you deleted the ALGOREPOSETTINGS repository variable) and run the **CI/CD** workflow and magically, all dependencies are now also resolved.
 
-| ![image](https://user-images.githubusercontent.com/10775043/232286814-4d4572f3-fa14-460e-84ba-f18fa071860f.png) |
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/4ebbc94e-a55c-47cd-a361-4e78828bed7c) |
+|-|
+
+Looking into the logs under the **RunPipeline** step, you will find that **Resolving Dependencies** will find that it is missing the **Licensing** dependency and then, under **installing app dependencies**, it searches GitHub Packages to locate the missing dependencies (+ their dependencies)
+
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/c2e48b09-7239-4cb2-881e-cd52ee5d6508) |
+|-|
+
+and looking at packages for the organization, we will now see that there are 5 packages - 3 of them published from the MySolutions repository:
+
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/a94bac82-cc70-40b6-acb6-682623e061c1) |
+|-|
+
+Now, if we remove the **appDependencyProbingPaths** settting in the **DK** and **US** project in **MySolution**, we will see that all projects still build. The reason for this is, that they will now download the W1 package from GitHub Packages, instead of including the W1 project when building DK and US:
+
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/6bf22151-321f-4494-8acf-da28763932da) |
+|-|
+
+Note though that this means that the DK and US projects will use the previously delivered version of the W1 dependency and not the one that is build in parallel with DK and US. If we set **useProjectDependencies** to true and run **Update AL-Go System Files**, projects will now be build in order and project dependencies from the same repository will be taken from the same build, while external dependencies will be taken from GitHub Packages. In the summary, we can also see that the newly build apps are also delivered to GitHub packages:
+
+| ![image](https://github.com/microsoft/AL-Go/assets/10775043/3342e737-24a8-416e-98ea-355d8f6a6a5d) |
 |-|
 
 Continuous Delivery is not only GitHub Packages. Let's have a look at continuous delivery...
 
 ---
 [Index](Index.md)&nbsp;&nbsp;[next](ContinuousDelivery.md)
-
