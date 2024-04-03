@@ -168,7 +168,7 @@ jobs:
   BuildPP:
     needs: [ Initialization ]
     if: (!failure()) && (!cancelled()) && needs.Initialization.outputs.powerPlatformSolutionFolder != ''
-    name: Build ${{ needs.Initialization.outputs.powerPlatformSolutionFolder }} (PowerPlatform)
+    name: Build PowerPlatform Solution
     uses: ./.github/workflows/_BuildPowerPlatformSolution.yaml
     secrets: inherit
     with:
