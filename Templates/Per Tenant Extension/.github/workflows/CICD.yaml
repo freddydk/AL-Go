@@ -180,8 +180,8 @@ jobs:
       publishArtifacts: ${{ github.ref_name == 'main' || startswith(github.ref_name, 'release/') || startswith(github.ref_name, 'releases/') || needs.Initialization.outputs.deliveryTargetsJson != '[]' || needs.Initialization.outputs.environmentCount > 0 }}
 
   DeployALDoc:
-    needs: [ Initialization, BuildAL ]
-    if: always() && needs.BuildAL.result == 'Success' && needs.Initialization.outputs.generateALDocArtifact == 1 && github.ref_name == 'main'
+    needs: [ Initialization, Build ]
+    if: always() && needs.Build.result == 'Success' && needs.Initialization.outputs.generateALDocArtifact == 1 && github.ref_name == 'main'
     runs-on: windows-latest
     name: Deploy Reference Documentation
     permissions:
@@ -227,8 +227,8 @@ jobs:
         uses: actions/deploy-pages@v4
 
   Deploy:
-    needs: [ Initialization, BuildAL, BuildPP ]
-    if: always() && needs.BuildAL.result == 'Success' && needs.BuildPP.result == 'Success' && needs.Initialization.outputs.environmentCount > 0
+    needs: [ Initialization, Build, BuildPP ]
+    if: always() && needs.Build.result == 'Success' && needs.BuildPP.result == 'Success' && needs.Initialization.outputs.environmentCount > 0
     strategy: ${{ fromJson(needs.Initialization.outputs.environmentsMatrixJson) }}
     runs-on: ${{ fromJson(matrix.os) }}
     name: Deploy to ${{ matrix.environment }}
@@ -289,8 +289,8 @@ jobs:
           deploymentEnvironmentsJson: ${{ needs.Initialization.outputs.deploymentEnvironmentsJson }}
 
   Deliver:
-    needs: [ Initialization, BuildAL, BuildPP ]
-    if: always() && needs.BuildAL.result == 'Success' && needs.BuildPP.result == 'Success' && needs.Initialization.outputs.deliveryTargetsJson != '[]'
+    needs: [ Initialization, Build, BuildPP ]
+    if: always() && needs.Build.result == 'Success' && needs.BuildPP.result == 'Success' && needs.Initialization.outputs.deliveryTargetsJson != '[]'
     strategy:
       matrix:
         deliveryTarget: ${{ fromJson(needs.Initialization.outputs.deliveryTargetsJson) }}
