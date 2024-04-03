@@ -228,7 +228,7 @@ jobs:
 
   Deploy:
     needs: [ Initialization, Build, BuildPP ]
-    if: always() && needs.Build.result == 'Success' && needs.BuildPP.result == 'Success' && needs.Initialization.outputs.environmentCount > 0
+    if: always() && needs.Build.result != 'Failure' && needs.BuildPP.result != 'Failure' && needs.Initialization.outputs.environmentCount > 0
     strategy: ${{ fromJson(needs.Initialization.outputs.environmentsMatrixJson) }}
     runs-on: ${{ fromJson(matrix.os) }}
     name: Deploy to ${{ matrix.environment }}
@@ -290,7 +290,7 @@ jobs:
 
   Deliver:
     needs: [ Initialization, Build, BuildPP ]
-    if: always() && needs.Build.result == 'Success' && needs.BuildPP.result == 'Success' && needs.Initialization.outputs.deliveryTargetsJson != '[]'
+    if: always() && needs.Build.result != 'Failure' && needs.BuildPP.result != 'Failure' && needs.Initialization.outputs.deliveryTargetsJson != '[]'
     strategy:
       matrix:
         deliveryTarget: ${{ fromJson(needs.Initialization.outputs.deliveryTargetsJson) }}
@@ -337,11 +337,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: DUMP
-        run: |
-          Write-Host '"${{ needs.Build.result }}"'
-          Write-Host '"${{ needs.BuildPP.result }}"'
 
       - name: Finalize the workflow
         id: PostProcess
