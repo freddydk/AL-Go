@@ -46,7 +46,7 @@ env:
   ALGoRepoSettings: ${{ vars.ALGoRepoSettings }}
 
 jobs:
-  BuildALGoProject:
+  BuildPowerPlatformSolution:
     needs: [ ]
     runs-on: ${{ fromJson(inputs.runsOn) }}
     defaults:
