@@ -228,7 +228,7 @@ jobs:
 
   Deploy:
     needs: [ Initialization, Build, BuildPP ]
-    if: always() && needs.Build.result == 'Success' && needs.BuildPP.result == 'Success' && needs.Initialization.outputs.environmentCount > 0
+    if: always() && needs.Build.result != 'Failure' && needs.BuildPP.result != 'Failure' && needs.Initialization.outputs.environmentCount > 0
     strategy: ${{ fromJson(needs.Initialization.outputs.environmentsMatrixJson) }}
     runs-on: ${{ fromJson(matrix.os) }}
     name: Deploy to ${{ matrix.environment }}
@@ -290,7 +290,7 @@ jobs:
 
   Deliver:
     needs: [ Initialization, Build, BuildPP ]
-    if: always() && needs.Build.result == 'Success' && needs.BuildPP.result == 'Success' && needs.Initialization.outputs.deliveryTargetsJson != '[]'
+    if: always() && needs.Build.result != 'Failure' && needs.BuildPP.result != 'Failure' && needs.Initialization.outputs.deliveryTargetsJson != '[]'
     strategy:
       matrix:
         deliveryTarget: ${{ fromJson(needs.Initialization.outputs.deliveryTargetsJson) }}
@@ -331,7 +331,7 @@ jobs:
           artifacts: '.artifacts'
 
   PostProcess:
-    needs: [ Initialization, Deploy, Deliver, DeployALDoc ]
+    needs: [ Initialization, Build, BuildPP, Deploy, Deliver, DeployALDoc ]
     if: (!cancelled())
     runs-on: [ windows-latest ]
     steps:
