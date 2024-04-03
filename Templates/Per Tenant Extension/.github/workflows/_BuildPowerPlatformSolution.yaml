@@ -1,6 +1,6 @@
-name: '_Build AL-Go project'
+name: '_Build PowerPlatform Solution'
 
-run-name: 'Build project ${{ inputs.project }}'
+run-name: 'Build PP ${{ inputs.project }}'
 
 on:
   workflow_call:
@@ -52,7 +52,7 @@ jobs:
     defaults:
       run:
         shell: ${{ inputs.shell }}
-    name: ${{ inputs.projectName }}
+    name: 'PP ${{ inputs.projectName }}'
     steps:
       - name: Checkout
         uses: actions/checkout@v4

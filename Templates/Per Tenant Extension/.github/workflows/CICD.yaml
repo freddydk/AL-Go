@@ -141,7 +141,7 @@ jobs:
           templateUrl: ${{ env.templateUrl }}
           downloadLatest: true
 
-  BuildAL:
+  Build:
     needs: [ Initialization ]
     if: (!failure()) && (!cancelled()) && fromJson(needs.Initialization.outputs.buildOrderJson)[0].projectsCount > 0
     strategy:

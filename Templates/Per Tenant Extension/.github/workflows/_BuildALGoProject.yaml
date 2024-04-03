@@ -1,6 +1,6 @@
 name: '_Build AL-Go project'
 
-run-name: 'Build project ${{ inputs.project }}'
+run-name: 'Build AL ${{ inputs.project }}'
 
 on:
   workflow_call:
@@ -83,7 +83,7 @@ jobs:
     defaults:
       run:
         shell: ${{ inputs.shell }}
-    name: ${{ inputs.projectName }} (${{ inputs.buildMode }})
+    name: '${{ inputs.projectName }} (${{ inputs.buildMode }})'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
