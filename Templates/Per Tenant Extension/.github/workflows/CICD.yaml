@@ -331,12 +331,17 @@ jobs:
           artifacts: '.artifacts'
 
   PostProcess:
-    needs: [ Initialization, Deploy, Deliver, DeployALDoc ]
+    needs: [ Initialization, Build, BuildPP, Deploy, Deliver, DeployALDoc ]
     if: (!cancelled())
     runs-on: [ windows-latest ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: DUMP
+        run: |
+          Write-Host '"${{ needs.Build.result }}"'
+          Write-Host '"${{ needs.BuildPP.result }}"'
 
       - name: Finalize the workflow
         id: PostProcess
