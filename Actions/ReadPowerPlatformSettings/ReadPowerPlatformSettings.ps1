@@ -5,10 +5,11 @@ param(
     [string] $environmentName
 )
 
+$envName = $environmentName.Split(' ')[0]
+
+# Read the deployment settings
 $deploymentEnvironments = $deploymentEnvironmentsJson | ConvertFrom-Json
 $deploymentSettings = $deploymentEnvironments."$environmentName"
-$envName = $environmentName.Split(' ')[0]
-$secrets = $env:Secrets | ConvertFrom-Json
 
 foreach($property in 'ppEnvironmentUrl','companyId','environmentName') {
     if ($deploymentSettings."$property") {
@@ -16,11 +17,19 @@ foreach($property in 'ppEnvironmentUrl','companyId','environmentName') {
         Add-Content -Encoding utf8 -Path $env:GITHUB_OUTPUT -Value "$property=$($deploymentSettings."$property")"
     }
     else {
-        Write-Host "::ERROR::DeployTo$envName setting must contain '$property' property"
-        exit 1
+        # Write-Host "::ERROR::DeployTo$envName setting must contain '$property' property"
+        throw "::ERROR::$envName setting must contain '$property' property"
     }
 }
 
+# Verify the secrets are provided
+if ($null -eq $env:Secrets) {
+    # Write-Host '::ERROR::$env:Secrets must be provided'
+    throw '::ERROR::$env:Secrets must be provided'
+}
+$secrets = $env:Secrets | ConvertFrom-Json
+
+# Read the authentication context from secrets
 $authContext = $null
 foreach($secretName in "$($envName)-AuthContext","$($envName)_AuthContext","AuthContext") {
     if ($secrets."$secretName") {
@@ -45,10 +54,14 @@ foreach($secretName in "$($envName)-AuthContext","$($envName)_AuthContext","Auth
             Write-Host "Authenticating with user name"
         }
         else {
-            Write-Host "::ERROR::Secret $secretName must contain either 'ppUserName' and 'ppPassword' properties or 'ppApplicationId', 'ppClientSecret' and 'ppTenantId' properties"
-            exit 1
+            throw "::ERROR::Secret $secretName must contain either 'ppUserName' and 'ppPassword' properties or 'ppApplicationId', 'ppClientSecret' and 'ppTenantId' properties"
         }
         break
     }
 }
 
+# Verify the authentication context is read
+if ($null -eq $authContext) {
+    Write-Host "::ERROR::Unable to find authentication context for GitHub environment $envName in secrets"
+    exit 1
+}
