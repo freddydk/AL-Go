@@ -37,7 +37,6 @@ function Update-PowerAppSettings {
             Write-Host "No changes needed for: "$currentSetting
             continue
         }
-        write-host "Updating PowerApp settings from: $currentSetting to: $newSettings"
         Update-PowerAppFiles -oldSetting $currentSetting -newSetting $newSettings -solutionFolder $SolutionFolder
     }
 }
@@ -57,7 +56,7 @@ function Update-PowerAppFiles {
             if (Select-String -Pattern $oldSetting -InputObject $fileContent) {
                 $fileContent = $fileContent -creplace $oldSetting, $newSetting
                 Set-Content -Path $file.FullName -Value $fileContent
-                Write-Host "Updated: $file.FullName"
+                Write-Host "Updated: "$file.FullName
             }
         }
     }
@@ -142,9 +141,6 @@ function Update-FlowFile {
     )
     # Read the JSON file
     $jsonObject = Get-Content $FilePath  | ConvertFrom-Json
-
-    write-host "Checking flow: $FilePath"
-
     $shouldUpdate = $false
 
     # Update all flow triggers
@@ -175,9 +171,9 @@ function Update-FlowFile {
         }
     }
     if ($shouldUpdate) {
-        Write-Host "Updating: $FilePath"
         # Save the updated JSON back to the file
         $jsonObject | ConvertTo-Json -Depth 100 | Set-Content  $FilePath
+        Write-Host "Updated: $FilePath"
     }
     else {
         Write-Host "No update needed for: $FilePath"
@@ -202,10 +198,6 @@ function Update-ParameterObject {
     $oldCompany = $parametersObject.company
     $oldBcEnvironment = $parametersObject.bcenvironment
 
-    write-host "Checking parameters object: "$parametersObject
-    write-host "BcEnvironment: $oldBcEnvironment"
-    write-host "Company: $oldCompany"
-
     # Check if parameters are already set to the correct values
     if (($oldCompany -eq $CompanyId) -and ($oldBcEnvironment -eq $EnvironmentName)) {
         return $false
@@ -220,8 +212,6 @@ function Update-ParameterObject {
 
     $parametersObject.company = $CompanyId
     $parametersObject.bcEnvironment = $EnvironmentName
-
-    write-host "New parameters object: "$parametersObject
 
     return $true
 }
@@ -247,9 +237,7 @@ function Update-SolutionVersionNode {
         Write-Host "New version: "$newVersionNumber
         $versionNode.'#text' = $newVersionNumber
     }
-    else {
-        Write-Host "Skipping version update since appBuild and appRevision are not set ($appBuild, $appRevision)"
-    }
+
 }
 
 function Update-SolutionManagedNode {
@@ -278,7 +266,7 @@ if ($appBuild -and $appRevision) {
     $xmlFile.Save($solutionDefinitionFile)
 }
 else {
-    Write-Host "Skipping Power Platform solution version update since appBuild and appRevision are not set ($appBuild, $appRevision)"  
+    Write-Host "Skip solution version update since appBuild and appRevision are not set ($appBuild, $appRevision)"  
 }
 
 if ($EnvironmentName -and $CompanyId) {   
@@ -288,5 +276,5 @@ if ($EnvironmentName -and $CompanyId) {
     Update-FlowSettings -SolutionFolder $SolutionFolder -EnvironmentName $EnvironmentName -CompanyId $CompanyId
 }
 else {
-    Write-Host "Skipping Power Platform solution Business Central connection settings update since EnvironmentName and CompanyId are not set ($EnvironmentName, $CompanyId)"
+    Write-Host "Skip Business Central connection settings update since EnvironmentName and CompanyId are not set ($EnvironmentName, $CompanyId)"
 }

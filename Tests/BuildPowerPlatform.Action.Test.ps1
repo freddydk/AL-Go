@@ -18,18 +18,16 @@ Describe "Build Power Platform Settings Action Tests" {
     }
 
     BeforeEach {
-        Write-Host "Before test"
         mkdir $testDataTempPath -Force
         copy-item -Path $testDataPath -Destination $testDataTempPath -Recurse -Force
     }
 
     AfterEach {
-        Write-Host "After test"
         Remove-Item -Path $testDataTempPath -Recurse -Force
     }
 
     It 'Updates the solution file' {
-
+        write-host "Run update solution file test"
         # The old version is hardcoded in the test data
         $oldVersionString = "1.0.0.0"
 
@@ -54,6 +52,7 @@ Describe "Build Power Platform Settings Action Tests" {
     }
 
     It 'Updates the Power App connections' {
+        write-host "Run update BC connections test"
         # note: The old company name and environment name are hardcoded in the test data
         $oldCompanyName = "TestCompanyId"
         $oldEnvironmentName = "TestEnvironmentName"
