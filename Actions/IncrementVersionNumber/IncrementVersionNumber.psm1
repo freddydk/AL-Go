@@ -53,11 +53,11 @@ function Set-VersionInSettingsFile {
     if ($newValue.StartsWith('+')) {
         # Handle incremental version number
 
+        # Defensive check. Should never happen.
         $allowedIncrementalVersionNumbers = @('+1', '+0.1')
         if (-not $allowedIncrementalVersionNumbers.Contains($newValue)) {
             throw "Incremental version number $newValue is not allowed. Allowed incremental version numbers are: $($allowedIncrementalVersionNumbers -join ', ')"
         }
-
         # Defensive check. Should never happen.
         if($null -eq $oldValue) {
             throw "The setting $settingName does not exist in the settings file. It must exist to be able to increment the version number."
@@ -215,13 +215,13 @@ function Set-DependenciesVersionInAppManifests {
 #>
 function Set-PowerPlatformSolutionVersion {
     param(
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true)]
         [string] $powerPlatformSolutionPath,
         [Parameter(Mandatory = $true)]
         [string] $newValue
     )
 
-    write-host "Updating Power Platform solution version"
+    Write-Host "Updating Power Platform solution version"
     $files = Get-ChildItem -Path $powerPlatformSolutionPath -filter 'solution.xml' -Recurse -File | Where-Object { $_.Directory.Name -eq "other" }
     if (-not $files) {
         Write-Host "Power Platform solution file not found"
