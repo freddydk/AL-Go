@@ -120,12 +120,13 @@ function Update-FlowSettings {
     Write-Host "Updating Flow settings"
     $flowFilePaths = Get-ChildItem -Path "$SolutionFolder/workflows" -Recurse -Filter *.json | Select-Object -ExpandProperty FullName
 
-    if ($flowFilePaths.Count -eq 0) {
-        Write-Warning "Could not find any Power Automate flows"
+    if ($flowFilePaths -is [string]) {
+        Update-FlowFile -FilePath $flowFilePaths -CompanyId $CompanyId -EnvironmentName $EnvironmentName
     }
-
-    foreach ($flowFilePath in $flowFilePaths) {
-        Update-FlowFile -FilePath $flowFilePath -CompanyId $CompanyId -EnvironmentName $EnvironmentName
+    else {
+        foreach ($flowFilePath in $flowFilePaths) {
+            Update-FlowFile -FilePath $flowFilePath -CompanyId $CompanyId -EnvironmentName $EnvironmentName
+        }
     }
 }
 
@@ -147,13 +148,13 @@ function Update-FlowFile {
     $triggersObject = $jsonObject.properties.definition.triggers
     $triggers = $triggersObject | Get-Member -MemberType Properties
     foreach ($trigger in $triggers) {
-        $parametersObject = $triggersObject.($trigger.Name).inputs.parameters
+        $triggerInputs = $triggersObject.($trigger.Name).inputs
 
-        if (-not $parametersObject) {
-            continue
-        }
-        if(Update-ParameterObject -parametersObject $parametersObject -CompanyId $CompanyId -EnvironmentName $EnvironmentName){
-            $shouldUpdate = $true
+        if($triggerInputs | Get-Member -MemberType Properties -name 'parameters'){
+            # Business Central triggers have connection information in the input parameters
+            if(Update-ParameterObject -parametersObject $triggerInputs.parameters -CompanyId $CompanyId -EnvironmentName $EnvironmentName){
+                $shouldUpdate = $true
+            }
         }
     }
 
@@ -161,13 +162,12 @@ function Update-FlowFile {
     $actionsObject = $jsonObject.properties.definition.actions
     $actions = $actionsObject | Get-Member -MemberType Properties
     foreach ($action in $actions) {
-        $parametersObject = $actionsObject.($action.Name).inputs.parameters
-
-        if (-not $parametersObject) {
-            continue
-        }
-        if(Update-ParameterObject -parametersObject $parametersObject -CompanyId $CompanyId -EnvironmentName $EnvironmentName){
-            $shouldUpdate = $true
+        $actionInput = $actionsObject.($action.Name).inputs
+        if($actionInput | Get-Member -MemberType Properties -name 'parameters'){
+            # Business Central actions have connection information in the input parameters
+            if(Update-ParameterObject -parametersObject $actionInput.parameters -CompanyId $CompanyId -EnvironmentName $EnvironmentName){
+                $shouldUpdate = $true
+            }
         }
     }
     if ($shouldUpdate) {
