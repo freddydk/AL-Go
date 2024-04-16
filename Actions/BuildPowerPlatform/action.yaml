@@ -5,6 +5,35 @@ inputs:
     description: Shell in which you want to run the action (powershell or pwsh)
     required: false
     default: powershell
+  solutionFolder:
+    description: The Power Platform solution path
+    required: true
+  companyId:
+    description: The Business Central company ID
+    required: false
+    default: ''
+  environmentName:
+    description: The Business Central environment name
+    required: false
+    default: ''
+  appBuild:
+    description: The app build number
+    required: false
+    default: ''
+  appRevision:
+    description: The app revision number
+    required: false
+    default: ''
+  managed:
+    description: Specifies whether the solution is managed or unmanaged
+    required: false
+    default: false
+  outputFolder:
+    description: Output folder where the zip file will be placed
+    required: true
+  outputFileName:
+    description: The name of the output zip file
+    required: true
   actor:
     description: The GitHub actor running the action
     required: false
@@ -17,31 +46,6 @@ inputs:
     description: Specifies the parent telemetry scope for the telemetry signal
     required: false
     default: '7b7d'
-  solutionFolder:
-    description: The Power Platform solution path
-    required: true
-  outputFolder:
-    description: Output folder where the zip file will be placed
-    required: true
-  outputFileName:
-    description: The name of the output zip file
-    required: true
-  companyId:
-    description: The Business Central company ID
-    required: false
-    default: ''
-  environmentName:
-    description: The Business Central environment name
-    required: false
-    default: ''
-  appBuild:
-    description: The app build number
-    default: ''
-    required: false
-  appRevision: 
-    description: The app revision number
-    default: ''
-    required: false
 
 runs:
   using: composite

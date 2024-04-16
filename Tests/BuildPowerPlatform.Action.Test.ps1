@@ -11,8 +11,8 @@ Describe "Build Power Platform Settings Action Tests" {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'actionScript', Justification = 'False positive.')]
         $actionScript = GetActionScript -scriptRoot $scriptRoot -scriptName $scriptName
 
-        $testDataPath = Join-Path $PSScriptRoot "PowerPlatformTestData\*";
-        $testDataTempPath = Join-Path $PSScriptRoot "PowerPlatformTestData_temp";
+        $testDataPath = Join-Path $PSScriptRoot "_TestData-PowerPlatform\*";
+        $testDataTempPath = Join-Path $PSScriptRoot "_TestData-PowerPlatform_temp";
 
         Invoke-Expression $actionScript
     }
@@ -35,15 +35,17 @@ Describe "Build Power Platform Settings Action Tests" {
         $newRevisionString = "999"
         $newVersionString = "1.0.$newBuildString.$newRevisionString"
 
-        $testSolutionFileBeforeTest = [xml](Get-Content -Encoding UTF8 -Path "$testDataTempPath\other\solution.xml")
+        $solutionPath = "$testDataTempPath\StandartSolution";
+
+        $testSolutionFileBeforeTest = [xml](Get-Content -Encoding UTF8 -Path "$solutionPath\other\solution.xml")
         $versionNode = $testSolutionFileBeforeTest.SelectSingleNode("//Version")
         $versionNodeText = $versionNode.'#text'
         $versionNodeText | Should -Not -BeNullOrEmpty
         $versionNodeText | Should -Contain $oldVersionString
         
-        BuildPowerPlatform -solutionFolder $testDataTempPath -appBuild $newBuildString -appRevision $newRevisionString
+        BuildPowerPlatform -solutionFolder $solutionPath -appBuild $newBuildString -appRevision $newRevisionString
 
-        $testSolutionFileAfterTest = [xml](Get-Content -Encoding UTF8 -Path "$testDataTempPath\other\solution.xml")
+        $testSolutionFileAfterTest = [xml](Get-Content -Encoding UTF8 -Path "$solutionPath\other\solution.xml")
         $versionNode = $testSolutionFileAfterTest.SelectSingleNode("//Version")
         $versionNodeText = $versionNode.'#text'
         $versionNodeText | Should -Not -BeNullOrEmpty
@@ -60,14 +62,18 @@ Describe "Build Power Platform Settings Action Tests" {
         $newCompanyName = "NewCompanyName"
         $newEnvironmentName = "NewEnvironmentName"
 
+        $solutionPath = "$testDataTempPath\StandartSolution";
+
         # Check file content before running the script
-        $connectionFileContent = [string](Get-Content -Encoding UTF8 -Path "$testDataTempPath\CanvasApps\src\TestApp\Connections\Connections.json")
+        # NOTE: There are multiple connection files in the test data, but we only check one of them as a smoke test
+        $connectionFileContent = [string](Get-Content -Encoding UTF8 -Path "$solutionPath\CanvasApps\src\TestApp\Connections\Connections.json")
         $connectionFileContent | Should -Not -BeNullOrEmpty
         $connectionFileContent | Should -Match $oldCompanyName
         $connectionFileContent | Should -Match $oldEnvironmentName
         $connectionFileContent | Should -Not -Match $newCompanyName
         $connectionFileContent | Should -Not -Match $newEnvironmentName
-        $workflowFileContent = [string](Get-Content -Encoding UTF8 -Path "$testDataTempPath\workflows\TestWorkflow-ABA81736-12D9-ED11-A7C7-000D3A991110.json")
+
+        $workflowFileContent = [string](Get-Content -Encoding UTF8 -Path "$solutionPath\workflows\TestWorkflow-ABA81736-12D9-ED11-A7C7-000D3A991110.json")
         $workflowFileContent | Should -Not -BeNullOrEmpty
         $workflowFileContent | Should -Match $oldCompanyName
         $workflowFileContent | Should -Match $oldEnvironmentName
@@ -75,17 +81,17 @@ Describe "Build Power Platform Settings Action Tests" {
         $workflowFileContent | Should -Not -Match $newEnvironmentName
         
         # Run the script
-        BuildPowerPlatform -solutionFolder $testDataTempPath -CompanyId $newCompanyName -EnvironmentName $newEnvironmentName
+        BuildPowerPlatform -solutionFolder $solutionPath -CompanyId $newCompanyName -EnvironmentName $newEnvironmentName
 
         # Check file content after running the script
-        $connectionFileContent = [string](Get-Content -Encoding UTF8 -Path "$testDataTempPath\CanvasApps\src\TestApp\Connections\Connections.json")
+        $connectionFileContent = [string](Get-Content -Encoding UTF8 -Path "$solutionPath\CanvasApps\src\TestApp\Connections\Connections.json")
         $connectionFileContent | Should -Not -BeNullOrEmpty
         $connectionFileContent | Should -Not -Match $oldCompanyName
         $connectionFileContent | Should -Not -Match $oldEnvironmentName
         $connectionFileContent | Should -Match $newCompanyName
         $connectionFileContent | Should -Match $newEnvironmentName
 
-        $workflowFileContent = [string](Get-Content -Encoding UTF8 -Path "$testDataTempPath\workflows\TestWorkFlow-ABA81736-12D9-ED11-A7C7-000D3A991110.json")
+        $workflowFileContent = [string](Get-Content -Encoding UTF8 -Path "$solutionPath\workflows\TestWorkFlow-ABA81736-12D9-ED11-A7C7-000D3A991110.json")
         $workflowFileContent | Should -Not -BeNullOrEmpty
         $workflowFileContent | Should -Not -Match $oldCompanyName
         $workflowFileContent | Should -Not -Match $oldEnvironmentName
@@ -93,16 +99,17 @@ Describe "Build Power Platform Settings Action Tests" {
         $workflowFileContent | Should -Match $newEnvironmentName
     }
 
-    # It 'Test action.yaml matches script' {
-    #     $permissions = [ordered]@{
-    #     }
-    #     $outputs = [ordered]@{
-    #         "GitHubRunnerJson" = "GitHubRunner in compressed Json format"
-    #         "GitHubRunnerShell" = "Shell for GitHubRunner jobs"
-    #     }
-    #     YamlTest -scriptRoot $scriptRoot -actionName $actionName -actionScript $actionScript -permissions $permissions -outputs $outputs
-    # }
+    It 'Works with PowerApp Only' {
+        write-host "Run PowerApp only test"
+        $solutionPath = "$testDataTempPath\PowerAppOnlySolution";
+        
+        # Run the script
+        BuildPowerPlatform -solutionFolder $solutionPath -CompanyId "NewCompanyName" -EnvironmentName "NewEnvironmentName"
+    }
 
-    # Call action
-
+    It 'Works with Flow only solution' {
+        write-host "Run Flow only test"
+        $solutionPath = "$testDataTempPath\FlowOnlySolution";
+        BuildPowerPlatform -solutionFolder $solutionPath -CompanyId "NewCompanyName" -EnvironmentName "NewEnvironmentName"
+    }
 }

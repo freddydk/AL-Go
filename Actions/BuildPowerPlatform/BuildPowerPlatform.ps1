@@ -26,7 +26,7 @@ function Update-PowerAppSettings {
     Write-Host "Updating PowerApp settings"
     $currentPowerAppSettings = Get-CurrentPowerAppSettings -solutionFolder $SolutionFolder
     if ($currentPowerAppSettings.Count -eq 0) {
-        Write-Warning "Could not find PowerApps connections file"
+        Write-Host "::Notice::No Power Apps found"
         return
     }
 
@@ -120,13 +120,13 @@ function Update-FlowSettings {
     Write-Host "Updating Flow settings"
     $flowFilePaths = Get-ChildItem -Path "$SolutionFolder/workflows" -Recurse -Filter *.json | Select-Object -ExpandProperty FullName
 
-    if ($flowFilePaths -is [string]) {
-        Update-FlowFile -FilePath $flowFilePaths -CompanyId $CompanyId -EnvironmentName $EnvironmentName
+    if ($null -eq $flowFilePaths) {
+        Write-Host "::Notice::No Power Automate flows found"
+        return
     }
-    else {
-        foreach ($flowFilePath in $flowFilePaths) {
-            Update-FlowFile -FilePath $flowFilePath -CompanyId $CompanyId -EnvironmentName $EnvironmentName
-        }
+        
+    foreach ($flowFilePath in $flowFilePaths) {
+        Update-FlowFile -FilePath $flowFilePath -CompanyId $CompanyId -EnvironmentName $EnvironmentName
     }
 }
 
@@ -150,9 +150,9 @@ function Update-FlowFile {
     foreach ($trigger in $triggers) {
         $triggerInputs = $triggersObject.($trigger.Name).inputs
 
-        if($triggerInputs | Get-Member -MemberType Properties -name 'parameters'){
+        if ($triggerInputs | Get-Member -MemberType Properties -name 'parameters') {
             # Business Central triggers have connection information in the input parameters
-            if(Update-ParameterObject -parametersObject $triggerInputs.parameters -CompanyId $CompanyId -EnvironmentName $EnvironmentName){
+            if (Update-ParameterObject -parametersObject $triggerInputs.parameters -CompanyId $CompanyId -EnvironmentName $EnvironmentName) {
                 $shouldUpdate = $true
             }
         }
@@ -163,9 +163,9 @@ function Update-FlowFile {
     $actions = $actionsObject | Get-Member -MemberType Properties
     foreach ($action in $actions) {
         $actionInput = $actionsObject.($action.Name).inputs
-        if($actionInput | Get-Member -MemberType Properties -name 'parameters'){
+        if ($actionInput | Get-Member -MemberType Properties -name 'parameters') {
             # Business Central actions have connection information in the input parameters
-            if(Update-ParameterObject -parametersObject $actionInput.parameters -CompanyId $CompanyId -EnvironmentName $EnvironmentName){
+            if (Update-ParameterObject -parametersObject $actionInput.parameters -CompanyId $CompanyId -EnvironmentName $EnvironmentName) {
                 $shouldUpdate = $true
             }
         }
@@ -259,14 +259,14 @@ function Update-SolutionManagedNode {
 }
 
 if ($appBuild -and $appRevision) {
-    Write-Host "Updating Power Platform solution ($solutionFolder)"
+    Write-Host "Updating Power Platform solution file ($solutionFolder)"
     $solutionDefinitionFile = $solutionFolder + "\other\solution.xml"
     $xmlFile = [xml](Get-Content -Encoding UTF8 -Path $solutionDefinitionFile)
     Update-SolutionVersionNode -appBuild $appBuild -appRevision $appRevision -xmlFile $xmlFile
     $xmlFile.Save($solutionDefinitionFile)
 }
 else {
-    Write-Host "Skip solution version update since appBuild and appRevision are not set ($appBuild, $appRevision)"  
+    Write-Host "Skip solution version update since appBuild and appRevision are not set"  
 }
 
 if ($EnvironmentName -and $CompanyId) {   
@@ -276,5 +276,5 @@ if ($EnvironmentName -and $CompanyId) {
     Update-FlowSettings -SolutionFolder $SolutionFolder -EnvironmentName $EnvironmentName -CompanyId $CompanyId
 }
 else {
-    Write-Host "Skip Business Central connection settings update since EnvironmentName and CompanyId are not set ($EnvironmentName, $CompanyId)"
+    Write-Host "Skip Business Central connection settings update since EnvironmentName and CompanyId are not set"
 }
