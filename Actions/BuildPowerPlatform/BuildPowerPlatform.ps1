@@ -7,6 +7,7 @@ param(
     [Parameter(Position = 4, mandatory = $false)] [string] $appRevision,
     [Parameter(Position = 5, mandatory = $false)] [string] $managed
 )
+$ErrorActionPreference = "Stop"; $ProgressPreference = "SilentlyContinue"; Set-StrictMode -Version 2.0
 
 function Update-PowerAppSettings {
     [CmdletBinding()]
@@ -25,7 +26,7 @@ function Update-PowerAppSettings {
     #       replace operation should be safe to run a all json and XML files.
     Write-Host "Updating PowerApp settings"
     $currentPowerAppSettings = Get-CurrentPowerAppSettings -solutionFolder $SolutionFolder
-    if ($currentPowerAppSettings.Count -eq 0) {
+    if ($null -eq $currentPowerAppSettings) {
         Write-Host "::Notice::No Power Apps found"
         return
     }

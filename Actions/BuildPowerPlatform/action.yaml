@@ -8,6 +8,12 @@ inputs:
   solutionFolder:
     description: The Power Platform solution path
     required: true
+  outputFolder:
+    description: Output folder where the zip file will be placed
+    required: true
+  outputFileName:
+    description: The name of the output zip file
+    required: true
   companyId:
     description: The Business Central company ID
     required: false
@@ -24,28 +30,6 @@ inputs:
     description: The app revision number
     required: false
     default: ''
-  managed:
-    description: Specifies whether the solution is managed or unmanaged
-    required: false
-    default: false
-  outputFolder:
-    description: Output folder where the zip file will be placed
-    required: true
-  outputFileName:
-    description: The name of the output zip file
-    required: true
-  actor:
-    description: The GitHub actor running the action
-    required: false
-    default: ${{ github.actor }}
-  token:
-    description: The GitHub token running the action
-    required: false
-    default: ${{ github.token }}
-  parentTelemetryScopeJson:
-    description: Specifies the parent telemetry scope for the telemetry signal
-    required: false
-    default: '7b7d'
 
 runs:
   using: composite

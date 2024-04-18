@@ -147,7 +147,7 @@ Describe "Read Power Platform Settings Action Tests" {
             companyId       = "11111111-1111-1111-1111-111111111111"
         }
         $errorMessage = runMissingSettingsTest -deployToDevProperties $deployToDevProperties
-        $errorMessage | Should -Be "::ERROR::DeployToDev setting must contain 'ppEnvironmentUrl' property"
+        $errorMessage | Should -Be "DeployToDev setting must contain 'ppEnvironmentUrl' property"
 
         # Test missing companyId
         $deployToDevProperties = @{
@@ -155,7 +155,7 @@ Describe "Read Power Platform Settings Action Tests" {
             ppEnvironmentUrl = "https://TestUrL.crm.dynamics.com"
         }
         $errorMessage = runMissingSettingsTest -deployToDevProperties $deployToDevProperties
-        $errorMessage | Should -Be "::ERROR::DeployToDev setting must contain 'companyId' property"
+        $errorMessage | Should -Be "DeployToDev setting must contain 'companyId' property"
 
         # Test missing environmentName
         $deployToDevProperties = @{
@@ -163,7 +163,7 @@ Describe "Read Power Platform Settings Action Tests" {
             ppEnvironmentUrl = "https://TestUrL.crm.dynamics.com"
         }
         $errorMessage = runMissingSettingsTest -deployToDevProperties $deployToDevProperties
-        $errorMessage | Should -Be "::ERROR::DeployToDev setting must contain 'environmentName' property"
+        $errorMessage | Should -Be "DeployToDev setting must contain 'environmentName' property"
 
     }
 
@@ -192,11 +192,6 @@ Describe "Read Power Platform Settings Action Tests" {
             return $errorObject.TargetObject
         }
         
-        # Test secret missing 
-        $env:Secrets = $null
-        $errorMessage = runMissingSecretsTest -deployToDevProperties $deployToDevProperties 
-        $errorMessage | Should -Be '::ERROR::$env:Secrets must be provided'
-
         # Test secret missing ppTenantId
         $secretProperties = @{
             ppApplicationId = "your-application-id"
@@ -204,7 +199,7 @@ Describe "Read Power Platform Settings Action Tests" {
         }
         SetSecretsEnvVariable -secretProperties $secretProperties
         $errorMessage = runMissingSecretsTest -deployToDevProperties $deployToDevProperties 
-        $errorMessage | Should -Be "::ERROR::Secret DeployToDev-AuthContext must contain either 'ppUserName' and 'ppPassword' properties or 'ppApplicationId', 'ppClientSecret' and 'ppTenantId' properties"
+        $errorMessage | Should -Be "Secret DeployToDev-AuthContext must contain either 'ppUserName' and 'ppPassword' properties or 'ppApplicationId', 'ppClientSecret' and 'ppTenantId' properties"
 
 
         # Test secret missing username
@@ -213,7 +208,7 @@ Describe "Read Power Platform Settings Action Tests" {
         }
         SetSecretsEnvVariable -secretProperties $secretProperties
         $errorMessage = runMissingSecretsTest -deployToDevProperties $deployToDevProperties 
-        $errorMessage | Should -Be "::ERROR::Secret DeployToDev-AuthContext must contain either 'ppUserName' and 'ppPassword' properties or 'ppApplicationId', 'ppClientSecret' and 'ppTenantId' properties"
+        $errorMessage | Should -Be "Secret DeployToDev-AuthContext must contain either 'ppUserName' and 'ppPassword' properties or 'ppApplicationId', 'ppClientSecret' and 'ppTenantId' properties"
 
     }
 

@@ -4,6 +4,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string] $environmentName
 )
+$ErrorActionPreference = "Stop"; $ProgressPreference = "SilentlyContinue"; Set-StrictMode -Version 2.0
 
 $envName = $environmentName.Split(' ')[0]
 
@@ -12,21 +13,15 @@ $deploymentEnvironments = $deploymentEnvironmentsJson | ConvertFrom-Json
 $deploymentSettings = $deploymentEnvironments."$environmentName"
 
 foreach($property in 'ppEnvironmentUrl','companyId','environmentName') {
-    if ($deploymentSettings."$property") {
+    if ($deploymentSettings | Get-Member -MemberType Properties -name $property) {
         Write-Host "Setting $property"
         Add-Content -Encoding utf8 -Path $env:GITHUB_OUTPUT -Value "$property=$($deploymentSettings."$property")"
     }
     else {
-        # Write-Host "::ERROR::DeployTo$envName setting must contain '$property' property"
-        throw "::ERROR::$envName setting must contain '$property' property"
+        throw "$envName setting must contain '$property' property"
     }
 }
 
-# Verify the secrets are provided
-if ($null -eq $env:Secrets) {
-    # Write-Host '::ERROR::$env:Secrets must be provided'
-    throw '::ERROR::$env:Secrets must be provided'
-}
 $secrets = $env:Secrets | ConvertFrom-Json
 
 # Read the authentication context from secrets
@@ -54,14 +49,13 @@ foreach($secretName in "$($envName)-AuthContext","$($envName)_AuthContext","Auth
             Write-Host "Authenticating with user name"
         }
         else {
-            throw "::ERROR::Secret $secretName must contain either 'ppUserName' and 'ppPassword' properties or 'ppApplicationId', 'ppClientSecret' and 'ppTenantId' properties"
+            throw "Secret $secretName must contain either 'ppUserName' and 'ppPassword' properties or 'ppApplicationId', 'ppClientSecret' and 'ppTenantId' properties"
         }
         break
     }
 }
 
-# Verify the authentication context is read
+# Verify the authentication context has been set
 if ($null -eq $authContext) {
-    Write-Host "::ERROR::Unable to find authentication context for GitHub environment $envName in secrets"
-    exit 1
+    throw "Unable to find authentication context for GitHub environment $envName in secrets"
 }
