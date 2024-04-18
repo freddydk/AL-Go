@@ -57,7 +57,7 @@ function Update-PowerAppFiles {
             if (Select-String -Pattern $oldSetting -InputObject $fileContent) {
                 $fileContent = $fileContent -creplace $oldSetting, $newSetting
                 Set-Content -Path $file.FullName -Value $fileContent
-                Write-Host "Updated: "$file.FullName
+                Write-Host "Updated: $($file.FullName)"
             }
         }
     }
