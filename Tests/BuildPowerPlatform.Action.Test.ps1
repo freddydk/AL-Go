@@ -1,6 +1,6 @@
 ﻿Get-Module TestActionsHelper | Remove-Module -Force
 Import-Module (Join-Path $PSScriptRoot 'TestActionsHelper.psm1')
-$ErrorActionPreference = 'stop'; Set-StrictMode -Version 2.0; $ProgressPreference = 'SilentlyContinue'
+$errorActionPreference = "Stop"; $ProgressPreference = "SilentlyContinue"; Set-StrictMode -Version 2.0
 
 Describe "Build Power Platform Settings Action Tests" {
     BeforeAll {
