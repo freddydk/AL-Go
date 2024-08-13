@@ -22,6 +22,7 @@ $defaultBcContainerHelperVersion = "preview" # Must be double quotes. Will be re
 $notSecretProperties = @("Scopes","TenantId","BlobName","ContainerName","StorageAccountName","ServerUrl","ppUserName")
 
 $runAlPipelineOverrides = @(
+    "PipelineInitialize"
     "DockerPull"
     "NewBcContainer"
     "ImportTestToolkitToBcContainer"
@@ -38,6 +39,7 @@ $runAlPipelineOverrides = @(
     "InstallMissingDependencies"
     "PreCompileApp"
     "PostCompileApp"
+    "PipelineFinalize"
 )
 
 # Well known AppIds
