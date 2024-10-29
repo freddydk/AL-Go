@@ -298,6 +298,7 @@ This functionality is also available in AL-Go for GitHub, by adding a file to th
 
 | Override | Description |
 | :-- | :-- |
+| PipelineInitialize | Customized pipeline initialisation steps |
 | DockerPull.ps1 | Pull the image specified by the parameter $imageName |
 | NewBcContainer.ps1 | Create the container using the parameters transferred in the $parameters hashtable |
 | ImportTestToolkitToBcContainer.ps1 | Import the test toolkit apps specified by the $parameters hashtable |
@@ -312,6 +313,7 @@ This functionality is also available in AL-Go for GitHub, by adding a file to th
 | GetBcContainerAppRuntimePackage.ps1 | Get the runtime package specified by the $parameters hashtable |
 | RemoveBcContainer.ps1 | Cleanup based on the $parameters hashtable |
 | InstallMissingDependencies | Install missing dependencies |
+| PipelineFinalize | Customized pipeline finalization steps |
 
 ## BcContainerHelper settings
 
