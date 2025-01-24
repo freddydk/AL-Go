@@ -46,6 +46,7 @@ Write-Host -ForegroundColor Yellow @'
 
 $tmpFolder = Join-Path ([System.IO.Path]::GetTempPath()) "$([Guid]::NewGuid().ToString())"
 New-Item -Path $tmpFolder -ItemType Directory -Force | Out-Null
+DownloadHelperFile -url 'https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/Github-AuthHelper.psm1' -folder $tmpFolder | Out-Null # Imported by the GitHub-Helper module
 $GitHubHelperPath = DownloadHelperFile -url 'https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/Github-Helper.psm1' -folder $tmpFolder
 $ALGoHelperPath = DownloadHelperFile -url 'https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/AL-Go-Helper.ps1' -folder $tmpFolder
 DownloadHelperFile -url 'https://raw.githubusercontent.com/microsoft/AL-Go-Actions/main/Packages.json' -folder $tmpFolder | Out-Null

@@ -1,3 +1,11 @@
+$script:realTokenCache = @{
+    "token" = ''
+    "repository" = ''
+    "realToken" = ''
+    "permissions" = ''
+    "expires" = [datetime]::Now
+}
+
 <#
  .SYNOPSIS
   This function will return the Access Token based on the gitHubAppClientId and privateKey
@@ -85,4 +93,98 @@ function GenerateJwtForTokenRequest {
     return "$header.$payload.$signature"
 }
 
-Export-ModuleMember -Function GetGitHubAppAuthToken, GenerateJwtForTokenRequest
+<#
+ .SYNOPSIS
+  This function will return the GitHub Access Token.
+  If the given token is a Personal Access Token, it will be returned unaltered
+  If the given token is a GitHub App token, it will be used to get an Access Token from GitHub
+ .PARAMETER token
+  The given token (PAT or GitHub App token)
+ .PARAMETER api_url
+  The GitHub API URL
+ .PARAMETER repository
+  The Current GitHub repository
+ .PARAMETER repositories
+  The repositories to request access to
+ .PARAMETER permissions
+  The permissions to request for the Access Token
+#>
+function GetAccessToken {
+    Param(
+        [string] $token,
+        [string] $api_url = $ENV:GITHUB_API_URL,
+        [string] $repository = $ENV:GITHUB_REPOSITORY,
+        [string[]] $repositories = @($repository),
+        [hashtable] $permissions = @{}
+    )
+
+    if ([string]::IsNullOrEmpty($token)) {
+        return [string]::Empty
+    }
+
+    if (($script:realTokenCache.token -eq $token -or $script:realTokenCache.realToken -eq $token) -and
+        $script:realTokenCache.repository -eq $repository -and
+        $script:realTokenCache.permissions -eq ($permissions | ConvertTo-Json -Compress) -and
+        $script:realTokenCache.expires -gt [datetime]::Now.AddMinutes(10)) {
+        # Same token request or re-request with cached token - and cached token won't expire in 10 minutes
+        return $script:realTokenCache.realToken
+    }
+    elseif (!($token.StartsWith("{"))) {
+        # a PAT token, return it as is
+        return $token
+    }
+    else {
+        # GitHub App token format: {"GitHubAppClientId":"<client_id>","PrivateKey":"<private_key>"}
+        try {
+            $json = $token | ConvertFrom-Json
+            $realToken, $expiresIn = GetGitHubAppAuthToken -gitHubAppClientId $json.GitHubAppClientId -privateKey $json.PrivateKey -api_url $api_url -repository $repository -repositories $repositories -permissions $permissions
+            $script:realTokenCache = @{
+                "token" = $token
+                "repository" = $repository
+                "realToken" = $realToken
+                "permissions" = $permissions | ConvertTo-Json -Compress
+                "expires" = [datetime]::Now.AddSeconds($expiresIn)
+            }
+            return $realToken
+        }
+        catch {
+            throw "Error getting access token from GitHub App. The error was ($($_.Exception.Message))"
+        }
+    }
+}
+
+<#
+ .SYNOPSIS
+  This function will return the headers for the GitHub API request
+ .PARAMETER token
+  The GitHub token
+ .PARAMETER accept
+  The Accept header value
+ .PARAMETER apiVersion
+  The X-GitHub-Api-Version header value
+ .PARAMETER api_url
+  The GitHub API URL
+ .PARAMETER repository
+  The Current GitHub repository
+#>
+function GetHeaders {
+    param (
+        [string] $token,
+        [string] $accept = "application/vnd.github+json",
+        [string] $apiVersion = "2022-11-28",
+        [string] $api_url = $ENV:GITHUB_API_URL,
+        [string] $repository = $ENV:GITHUB_REPOSITORY
+    )
+    $headers = @{
+        "Accept" = $accept
+        "X-GitHub-Api-Version" = $apiVersion
+    }
+    if (![string]::IsNullOrEmpty($token)) {
+        $accessToken = GetAccessToken -token $token -api_url $api_url -repository $repository -permissions @{"contents"="read";"metadata"="read";"actions"="read"}
+        $headers["Authorization"] = "token $accessToken"
+    }
+    return $headers
+}
+
+
+Export-ModuleMember -Function GetAccessToken, GetHeaders
