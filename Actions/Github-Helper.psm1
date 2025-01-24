@@ -1,12 +1,6 @@
-$script:escchars = @(' ','!','\"','#','$','%','\u0026','\u0027','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','\u003c','=','\u003e','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[','\\',']','^','_',[char]96,'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~')
+Import-Module (Join-Path $PSScriptRoot 'Github-AuthHelper.psm1')
 
-$script:realTokenCache = @{
-    "token" = ''
-    "repository" = ''
-    "realToken" = ''
-    "permissions" = ''
-    "expires" = [datetime]::Now
-}
+$script:escchars = @(' ','!','\"','#','$','%','\u0026','\u0027','(',')','*','+',',','-','.','/','0','1','2','3','4','5','6','7','8','9',':',';','\u003c','=','\u003e','?','@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','[','\\',']','^','_',[char]96,'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}','~')
 
 function MaskValue {
     Param(
@@ -604,95 +598,6 @@ function GetLatestRelease {
     $latestRelease
 }
 
-<#
- .SYNOPSIS
-  This function will return the Access Token based on the given token
-  If the given token is a Personal Access Token, it will be returned unaltered
-  If the given token is a GitHub App token, it will be used to get an Access Token from GitHub
- .PARAMETER token
-  The given token (PAT or GitHub App token)
- .PARAMETER api_url
-  The GitHub API URL
- .PARAMETER repository
-  The Current GitHub repository
- .PARAMETER repositories
-  The repositories to request access to
- .PARAMETER permissions
-  The permissions to request for the Access Token
-#>
-function GetAccessToken {
-    Param(
-        [string] $token,
-        [string] $api_url = $ENV:GITHUB_API_URL,
-        [string] $repository = $ENV:GITHUB_REPOSITORY,
-        [string[]] $repositories = @($repository),
-        [hashtable] $permissions = @{}
-    )
-
-    if ([string]::IsNullOrEmpty($token)) {
-        return [string]::Empty
-    }
-
-    if (($script:realTokenCache.token -eq $token -or $script:realTokenCache.realToken -eq $token) -and
-        $script:realTokenCache.repository -eq $repository -and
-        $script:realTokenCache.permissions -eq ($permissions | ConvertTo-Json -Compress) -and
-        $script:realTokenCache.expires -gt [datetime]::Now.AddMinutes(10)) {
-        # Same token request or re-request with cached token - and cached token won't expire in 10 minutes
-        return $script:realTokenCache.realToken
-    }
-    elseif (!($token.StartsWith("{"))) {
-        # not a json token
-        return $token
-    }
-    else {
-        # GitHub App token format: {"GitHubAppClientId":"<client_id>","PrivateKey":"<private_key>"}
-        $GitHubAuthHelperModuleName = "Github-AuthHelper"
-        $GitHubAuthHelperModulePath = Join-Path $PSScriptRoot "$($GitHubAuthHelperModuleName).psm1"
-        Write-Host $GitHubAuthHelperModulePath
-        if (-not (Get-Module $GitHubAuthHelperModuleName)) {
-            if (-not (Test-Path $GitHubAuthHelperModulePath)) {
-                throw "Module $GitHubAuthHelperModuleName not present. GitHub App tokens can only be used inside GitHub workflows."
-            }
-            Import-Module $GitHubAuthHelperModulePath
-        }
-        try {
-            $json = $token | ConvertFrom-Json
-            $realToken, $expiresIn = GetGitHubAppAuthToken -gitHubAppClientId $json.GitHubAppClientId -privateKey $json.PrivateKey -api_url $api_url -repository $repository -repositories $repositories -permissions $permissions
-            $script:realTokenCache = @{
-                "token" = $token
-                "repository" = $repository
-                "realToken" = $realToken
-                "permissions" = $permissions | ConvertTo-Json -Compress
-                "expires" = [datetime]::Now.AddSeconds($expiresIn)
-            }
-            return $realToken
-        }
-        catch {
-            throw "Error getting access token from GitHub App. The error was ($($_.Exception.Message))"
-        }
-    }
-}
-
-# Get Headers for API requests
-function GetHeaders {
-    param (
-        [string] $token,
-        [string] $accept = "application/vnd.github+json",
-        [string] $apiVersion = "2022-11-28",
-        [string] $api_url = $ENV:GITHUB_API_URL,
-        [string] $repository = $ENV:GITHUB_REPOSITORY
-    )
-    $headers = @{
-        "Accept" = $accept
-        "X-GitHub-Api-Version" = $apiVersion
-    }
-    if (![string]::IsNullOrEmpty($token)) {
-        $accessToken = GetAccessToken -token $token -api_url $api_url -repository $repository -permissions @{"contents"="read";"metadata"="read";"actions"="read"}
-        $headers["Authorization"] = "token $accessToken"
-    }
-    return $headers
-}
-
 function WaitForRateLimit {
     Param(
         [hashtable] $headers,
@@ -978,7 +883,6 @@ function FindLatestSuccessfulCICDRun {
     return $lastSuccessfulCICDRun
 }
 
-
 <#
     Gets the non-expired artifacts from the specified CICD run.
 #>
@@ -1199,3 +1103,23 @@ function DownloadArtifact {
         return $filename
     }
 }
+
+Export-ModuleMember -Function `
+    cmdDo,`
+    invoke-gh,`
+    invoke-git, `
+    SemVerObjToSemVerStr,`
+    SemVerStrToSemVerObj,`
+    GetReleases,`
+    GetLatestRelease,`
+    WaitForRateLimit,`
+    GetReleaseNotes, `
+    DownloadRelease,`
+    Get-ContentLF,`
+    Set-ContentLF,`
+    Set-JsonContentLF,`
+    FindLatestSuccessfulCICDRun,`
+    GetArtifacts,`
+    DownloadArtifacts, `
+    GetAccessToken,` # from GitHub-AuthHelper module
+    GetHeaders # from GitHub-AuthHelper module
