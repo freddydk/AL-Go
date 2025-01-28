@@ -175,8 +175,7 @@ function ModifyBuildWorkflows {
     }
 
     # Retrieve existing needs dependencies
-    $existingNeeds = $build.GetPropertyArray("needs:") ?? @()
-    Write-Host "PSTO: build: $($build)"
+    $existingNeeds = $build.GetPropertyArray("needs:") -or @()
     Write-Host "PSTO: existing needs: $($existingNeeds -join ', ')"
 
     # Duplicate the build job for each dependency depth
