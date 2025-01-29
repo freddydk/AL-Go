@@ -174,17 +174,11 @@ function ModifyBuildWorkflows {
         throw "No build job found in the workflow"
     }
 
-    # Retrieve existing needs dependencies
-    $existingNeeds = $build.GetPropertyArray("needs:")
-    if (-not $existingNeeds) {
-        $existingNeeds = @()
-    }
-
     # Duplicate the build job for each dependency depth
     $newBuild = @()
     for($index = 0; $index -lt $depth; $index++) {
         # All build job needs to have a dependency on the Initialization job
-        $needs = @('Initialization') + $existingNeeds | Where-Object { $_ -ne 'Initialization' }
+        $needs = @('Initialization')
         if ($index -eq 0) {
             # First build job needs to have a dependency on the Initialization job only
             # Example (depth 1):
