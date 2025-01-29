@@ -285,7 +285,7 @@ class Yaml {
                 }
                 elseif ($existingJobs -contains $needsthis) {
                     # Add dependency to job
-                    $needs = @(@($this.GetPropertyArray("jobs:/$($needsthis):/needs:"))+@($customJob.Name) | Where-Object { $_ }) -join ', '
+                    $needs = @(@($this.GetPropertyArray("jobs:/$($needsthis):/needs:"))+@($customJob.Name) | Where-Object { $_ }) | Select-Object -Unique -join ', '
                     $this.Replace("jobs:/$($needsthis):/needs:","needs: [ $needs ]")
                 }
             }
