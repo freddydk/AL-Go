@@ -11,7 +11,7 @@ on:
         default: ''
       githubOwner:
         description: GitHub organization set as owner for the temp repositories (default is to use your personal account - CANNOT be a free account)
-        requires: false
+        required: false
         default: ''
       runTestMatrix:
         description: Run the end to end test scenario for the full test matrix
