@@ -24,11 +24,11 @@ function DownloadTemplateRepository {
     # Construct API URL
     if ($templateUrl -like 'https://github.com/*') {
         # templateUrl is github.com - use the github.com API URL
-        $apiUrl = $templateUrl.Split('@')[0] -replace "^($([regex]::Escape('https://github.com'))/(.*)$", "https://api.github.com/repos/`$2"
+        $apiUrl = $templateUrl.Split('@')[0] -replace "^($([regex]::Escape('https://github.com') -replace '/', '\/')/(.*)$", "https://api.github.com/repos/`$2"
     }
     else {
         # templateUrl is not github.com (e.g. github enterprise) - use the GITHUB_SERVER_URL and GITHUB_API_URL environment variables
-        $apiUrl = $templateUrl.Split('@')[0] -replace "^($([regex]::Escape($env:GITHUB_SERVER_URL))/(.*)$", "$ENV:GITHUB_API_URL/repos/`$2"
+        $apiUrl = $templateUrl.Split('@')[0] -replace "^($([regex]::Escape($env:GITHUB_SERVER_URL) -replace '/', '\/')/(.*)$", "$ENV:GITHUB_API_URL/repos/`$2"
     }
     
     Write-Host "TemplateUrl: $templateUrl"
