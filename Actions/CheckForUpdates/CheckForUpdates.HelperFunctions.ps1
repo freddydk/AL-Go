@@ -30,7 +30,7 @@ function DownloadTemplateRepository {
         # templateUrl is not github.com (e.g. github enterprise) - use the GITHUB_SERVER_URL and GITHUB_API_URL environment variables
         $apiUrl = $templateUrl.Split('@')[0] -replace "^($([regex]::Escape($env:GITHUB_SERVER_URL) -replace '/', '\/'))/(.*)$", "$ENV:GITHUB_API_URL/repos/`$2"
     }
-    
+
     Write-Host "TemplateUrl: $templateUrl"
     Write-Host "ApiUrl: $apiUrl"
     Write-Host "TemplateSha: $($templateSha.Value)"
@@ -41,8 +41,16 @@ function DownloadTemplateRepository {
 
     # Use Authenticated API request if possible to avoid the 60 API calls per hour limit
     OutputDebug -message "Getting template repository ($templateRepository) with GITHUB_TOKEN"
-    $headers = GetHeaders -token $env:GITHUB_TOKEN -repository $templateRepository
+    if ($templateUrl -like "$env:GITHUB_SERVER_URL/*") {
+        # Use authenticated request if the templateUrl is on the same GitHub server as the current repository
+        $headers = GetHeaders -token $env:GITHUB_TOKEN -repository $templateRepository
+    }
+    else {
+        # Use unauthenticated request if the templateUrl is on a different GitHub server
+        $headers = GetHeaders -repository $templateRepository
+    }
     try {
+        # This ONLY fails if the template repository is private/internal and the GITHUB_TOKEN does not have access to it
         $response = Invoke-WebRequest -UseBasicParsing -Headers $headers -Method Head -Uri $templateRepositoryUrl
         OutputDebug -message ($response | Format-List | Out-String)
     }
@@ -86,7 +94,9 @@ function GetLatestTemplateSha {
     $branch = $templateUrl.Split('@')[1]
     Write-Host "Get latest SHA for $templateUrl"
     try {
-        $branchInfo = (InvokeWebRequest -Headers $headers -Uri "$apiUrl/branches/$branch").Content | ConvertFrom-Json
+        InvokeWebRequest -Headers $headers -Uri "$apiUrl/branches/$branch"
+
+        $branchInfo = ().Content | ConvertFrom-Json
     } catch {
         throw "Failed to update AL-Go System Files. Could not get the latest SHA from template ($templateUrl). (Error was $($_.Exception.Message))"
     }
