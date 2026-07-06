@@ -40,13 +40,14 @@ function DownloadTemplateRepository {
     $templateRepository = $templateRepositoryUrl.Split('/')[-2..-1] -join '/'
 
     # Use Authenticated API request if possible to avoid the 60 API calls per hour limit
-    OutputDebug -message "Getting template repository ($templateRepository) with GITHUB_TOKEN"
     if ($templateUrl -like "$env:GITHUB_SERVER_URL/*") {
         # Use authenticated request if the templateUrl is on the same GitHub server as the current repository
+        Write-Host "Getting template repository ($templateRepository) with GITHUB_TOKEN"
         $headers = GetHeaders -token $env:GITHUB_TOKEN -repository $templateRepository
     }
     else {
         # Use unauthenticated request if the templateUrl is on a different GitHub server
+        Write-Host "Getting template repository ($templateRepository) anonymously"
         $headers = GetHeaders -repository $templateRepository
     }
     try {
@@ -56,7 +57,7 @@ function DownloadTemplateRepository {
     }
     catch {
         # Ignore error
-        OutputDebug -message "Error getting template repository with GITHUB_TOKEN:"
+        OutputDebug -message "Error getting template repository:"
         OutputDebug -message $_
         $response = $null
     }
