@@ -21,6 +21,21 @@ function DownloadTemplateRepository {
         [bool] $downloadLatest
     )
 
+    # Construct API URL
+    if ($templateUrl -like 'https://github.com/*') {
+        # templateUrl is github.com - use the github.com API URL
+        $apiUrl = $templateUrl.Split('@')[0] -replace "^($([regex]::Escape('https://github.com'))/(.*)$", "https://api.github.com/repos/`$2"
+    }
+    else {
+        # templateUrl is not github.com (e.g. github enterprise) - use the GITHUB_SERVER_URL and GITHUB_API_URL environment variables
+        $apiUrl = $templateUrl.Split('@')[0] -replace "^($([regex]::Escape($env:GITHUB_SERVER_URL))/(.*)$", "$ENV:GITHUB_API_URL/repos/`$2"
+    }
+    
+    Write-Host "TemplateUrl: $templateUrl"
+    Write-Host "ApiUrl: $apiUrl"
+    Write-Host "TemplateSha: $($templateSha.Value)"
+    Write-Host "DownloadLatest: $downloadLatest"
+
     $templateRepositoryUrl = $templateUrl.Split('@')[0]
     $templateRepository = $templateRepositoryUrl.Split('/')[-2..-1] -join '/'
 
@@ -43,13 +58,6 @@ function DownloadTemplateRepository {
         # NOTE that the GitHub app needs to be installed in the template repository for this to work
         $headers = GetHeaders -token $token -repository $templateRepository
     }
-
-    # Construct API URL
-    $apiUrl = $templateUrl.Split('@')[0] -replace "^(https:\/\/github\.com\/)(.*)$", "$ENV:GITHUB_API_URL/repos/`$2"
-
-    Write-Host "TemplateUrl: $templateUrl"
-    Write-Host "TemplateSha: $($templateSha.Value)"
-    Write-Host "DownloadLatest: $downloadLatest"
 
     if ($downloadLatest) {
         # Get latest commit SHA from the template repository
