@@ -94,15 +94,16 @@ function GetLatestTemplateSha {
 
     $branch = $templateUrl.Split('@')[1]
     Write-Host "Get latest SHA for $templateUrl"
-    try {
+#    try {
         $url = "$apiUrl/branches/$branch"
         Write-Host $url
-        $result = Invoke-WebRequest -Headers $headers -Uri $url
+        $headers | out-host
+        $result = Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $url
         $result | out-host
         $branchInfo = $result.Content | ConvertFrom-Json
-    } catch {
-        throw "Failed to update AL-Go System Files. Could not get the latest SHA from template ($templateUrl). (Error was $($_.Exception.Message))"
-    }
+#    } catch {
+#        throw "Failed to update AL-Go System Files. Could not get the latest SHA from template ($templateUrl). (Error was $($_.Exception.Message))"
+#    }
     return $branchInfo.commit.sha
 }
 
